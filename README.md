@@ -9,13 +9,14 @@ The aim of this repository is to take a basic guitar tab and use it to create a 
 ## Features
 
 - 🎸 Convert text-based guitar tabs to professional-looking PDFs
+- 📝 **NEW: Markdown note-taking format** - Write tabs in simple markdown while watching video lessons!
 - 🎵 **Chord diagrams** - Visual chord charts showing finger positions
 - 🎼 **Scale generation** - Automatically generate scale tabs from music theory
 - 🎹 **Fretboard visualization** - See the entire scale layout on the guitar neck
 - 📊 Root note markers - Easily identify root notes in scale diagrams
 - 📄 Simple, intuitive API
 - 🎨 Clean, monospaced formatting for tab notation
-- 📝 Support for titles, subtitles, and annotations
+- 🎶 Support for lyrics, notes, and annotations
 - 🚀 Easy to use - just define your tab and generate!
 
 ## Installation
@@ -25,6 +26,39 @@ pip install -r requirements.txt
 ```
 
 ## Quick Start
+
+### Easy Markdown Format (Recommended for Video Lessons!)
+
+The fastest way to take notes while watching guitar lessons:
+
+```bash
+# Create a simple markdown file (see example_song.md)
+python markdown_tab_parser.py example_song.md
+
+# Or specify output filename
+python markdown_tab_parser.py my_notes.md my_song.pdf
+```
+
+**Example markdown format:**
+```markdown
+key: C
+tuning: standard
+
+chords:
+C: x32010
+Am: x02210
+
+[Intro - C]
+3f1s 2f2s 0s3
+note: Play slowly
+
+[Verse 1]
+"We are the champions"
+[Am]
+0s5 1f5s 2f5s
+```
+
+See **[MARKDOWN_FORMAT.md](MARKDOWN_FORMAT.md)** for complete documentation!
 
 ### Run the example scripts
 
