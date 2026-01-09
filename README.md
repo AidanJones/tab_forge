@@ -9,6 +9,10 @@ The aim of this repository is to take a basic guitar tab and use it to create a 
 ## Features
 
 - 🎸 Convert text-based guitar tabs to professional-looking PDFs
+- 🎵 **Chord diagrams** - Visual chord charts showing finger positions
+- 🎼 **Scale generation** - Automatically generate scale tabs from music theory
+- 🎹 **Fretboard visualization** - See the entire scale layout on the guitar neck
+- 📊 Root note markers - Easily identify root notes in scale diagrams
 - 📄 Simple, intuitive API
 - 🎨 Clean, monospaced formatting for tab notation
 - 📝 Support for titles, subtitles, and annotations
@@ -25,10 +29,10 @@ pip install -r requirements.txt
 ### Run the example scripts
 
 ```bash
-# Generate example tabs (C major scale examples)
+# Generate example tabs including A minor practice sheet with chords and scales
 python tab_to_pdf.py
 
-# Create a custom tab
+# Create custom tabs with chord progressions and scales
 python example_usage.py
 ```
 
@@ -64,6 +68,52 @@ pdf.add_tab(tab)
 pdf.save()
 ```
 
+### Create practice sheets with chords and scales
+
+```python
+from tab_to_pdf import GuitarTabPDF
+
+# Initialize PDF
+pdf = GuitarTabPDF("a_minor_practice.pdf")
+
+# Add title
+pdf.add_title("A Minor Scale Practice")
+pdf.add_subtitle("With Chord Progressions")
+
+# Add chord diagrams at the top
+pdf.add_chord_progression(['Am', 'C', 'Dm', 'Em'])
+
+# Add scale tabs (sequential notes)
+pdf.add_scale_tab('A', 'minor', start_string=5, start_fret=0)
+
+# Add fretboard diagram showing the scale across the entire neck
+# Root notes are marked with 'R'
+pdf.add_fretboard_diagram('A', 'minor', num_frets=12)
+
+# Save
+pdf.save()
+```
+
+### Available chords
+
+The following chords are available in the chord library:
+- **Am** - A minor
+- **C** - C major
+- **Dm** - D minor
+- **Em** - E minor
+- **G** - G major
+- **A** - A major
+- **D** - D major
+- **E** - E major
+- **F** - F major
+
+### Available scale types
+
+- `'minor'` - Natural minor scale
+- `'major'` - Major scale
+- `'pentatonic_minor'` - Minor pentatonic scale
+- `'pentatonic_major'` - Major pentatonic scale
+
 ## Tab Format
 
 Use standard ASCII tab notation:
@@ -85,8 +135,14 @@ E|------------------------------|  (low E string)
 ## Examples
 
 The repository includes example scripts:
-- `tab_to_pdf.py` - Main library with C major scale examples
-- `example_usage.py` - Shows how to create custom tabs
+- `tab_to_pdf.py` - Main library with examples including:
+  - A minor practice sheet with chords, scales, and fretboard diagrams
+  - C major scale patterns
+  - Simple chromatic scale
+- `example_usage.py` - Shows how to create custom tabs with:
+  - Custom guitar riffs and solos
+  - Scale practice sheets with chord progressions (G major example)
+  - Pentatonic scale practice (E minor pentatonic example)
 
 ## Requirements
 

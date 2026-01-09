@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Example usage of the Guitar Tab PDF Generator
-This shows how easy it is to create your own guitar tab PDFs
+This shows how easy it is to create your own guitar tab PDFs with chords and scales
 """
 
 from tab_to_pdf import GuitarTabPDF
@@ -54,6 +54,64 @@ E|-------------------------------------|
     pdf.save()
 
 
+def create_scale_practice_with_chords():
+    """Create a practice sheet with chords and scale patterns"""
+
+    pdf = GuitarTabPDF("scale_practice.pdf")
+
+    # Add title
+    pdf.add_title("G Major Scale Practice")
+    pdf.add_subtitle("With Common Chord Progressions")
+
+    # Add chord progression
+    pdf.add_chord_progression(['G', 'Em', 'C', 'D'])
+
+    # Add scale patterns
+    pdf.add_scale_tab('G', 'major', start_string=6, start_fret=3)
+    pdf.add_scale_tab('G', 'major', start_string=5, start_fret=10)
+
+    # Add fretboard diagram
+    pdf.add_fretboard_diagram('G', 'major', num_frets=12)
+
+    # Add practice tips
+    pdf.add_text("Practice Tips:")
+    pdf.add_text("- Learn the chord shapes first")
+    pdf.add_text("- Practice scales slowly with a metronome")
+    pdf.add_text("- Memorize root note positions (marked with R)")
+    pdf.add_text("- Try improvising over the chord progression using the scale")
+
+    pdf.save()
+
+
+def create_pentatonic_practice():
+    """Create a pentatonic scale practice sheet"""
+
+    pdf = GuitarTabPDF("pentatonic_practice.pdf")
+
+    pdf.add_title("E Minor Pentatonic Scale")
+    pdf.add_subtitle("Blues and Rock Practice Sheet")
+
+    # Add related chords
+    pdf.add_chord_progression(['Em', 'G', 'A'])
+
+    # Add pentatonic scale patterns
+    pdf.add_scale_tab('E', 'pentatonic_minor', start_string=6, start_fret=0)
+
+    # Add fretboard diagram
+    pdf.add_fretboard_diagram('E', 'pentatonic_minor', num_frets=12)
+
+    pdf.add_text("The pentatonic scale is perfect for blues and rock solos!")
+
+    pdf.save()
+
+
 if __name__ == "__main__":
+    # Create different types of practice sheets
     create_custom_tab()
-    print("\n✓ Your custom tab has been created as 'my_custom_tab.pdf'")
+    create_scale_practice_with_chords()
+    create_pentatonic_practice()
+
+    print("\n✓ Custom guitar tabs have been created:")
+    print("  - my_custom_tab.pdf")
+    print("  - scale_practice.pdf")
+    print("  - pentatonic_practice.pdf")
