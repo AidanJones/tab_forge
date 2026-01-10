@@ -149,7 +149,7 @@ class MarkdownTabParser:
 
         return notes
 
-    def convert_to_tab_string(self, notes_line: str, section_chord: Optional[str] = None) -> str:
+    def convert_to_tab_string(self, notes_line: str, section_chord: Optional[str] = None) -> Tuple[Optional[str], str]:
         """
         Convert a line of note notation to traditional tab format
 
@@ -158,11 +158,12 @@ class MarkdownTabParser:
             section_chord: Optional chord name from section header
 
         Returns:
-            Traditional tab string with 6 lines
+            Tuple of (chord_label, tab_string) where chord_label is the chord name if detected, else None
         """
         # Check if it's a chord shorthand (single word that's a chord name)
-        if notes_line.strip() in self.chords or notes_line.strip().lower() in ['em', 'am', 'dm', 'c', 'g', 'a', 'd', 'e', 'f']:
-            return self._chord_to_tab(notes_line.strip())
+        if notes_line.strip() in self.chords or self._is_chord_name(notes_line.strip()):
+            chord_name = notes_line.strip()
+            return (chord_name, self._chord_to_tab(chord_name))
 
         # Initialize 6 strings
         strings = [[] for _ in range(6)]
@@ -219,7 +220,7 @@ class MarkdownTabParser:
             line += '|'
             tab_lines.append(line)
 
-        return '\n'.join(tab_lines)
+        return (None, '\n'.join(tab_lines))
 
     def _chord_to_tab(self, chord_name: str) -> str:
         """Convert a chord name to a tab showing all strings played together"""
@@ -271,6 +272,18 @@ class MarkdownTabParser:
             frets.append(-1)
 
         return frets[:6]
+
+    def _is_chord_name(self, text: str) -> bool:
+        """Check if a text string is a chord name"""
+        from tab_to_pdf import CHORD_LIBRARY
+
+        # Check if it's in the chord library (case-insensitive)
+        if text in CHORD_LIBRARY:
+            return True
+
+        # Check common chord patterns
+        chord_pattern = re.match(r'^[A-G](#|b)?(m|maj|min|sus|aug|dim|add)?[0-9]?$', text, re.IGNORECASE)
+        return chord_pattern is not None
 
     def to_pdf(self, output_path: str) -> None:
         """Generate PDF from parsed markdown"""
@@ -326,7 +339,10 @@ class MarkdownTabParser:
                     pdf.add_text(f"Note: {note_text}")
                 # Otherwise, it's tab notation
                 else:
-                    tab_string = self.convert_to_tab_string(line, section['chord'])
+                    chord_label, tab_string = self.convert_to_tab_string(line, section['chord'])
+                    # If we detected a chord name, add it as a label above the tab
+                    if chord_label:
+                        pdf.add_text(f"[{chord_label}]")
                     pdf.add_tab(tab_string)
 
         pdf.save()

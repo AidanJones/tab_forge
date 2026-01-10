@@ -449,6 +449,20 @@ note: Start slowly
             return tabLines.join('\n');
         }
 
+        // Check if a string is a chord name
+        function isChordName(text) {
+            text = text.trim();
+
+            // Check if it's in the chord library (case-insensitive)
+            if (CHORD_LIBRARY[text] || CHORD_LIBRARY[text.toLowerCase()]) {
+                return true;
+            }
+
+            // Check common chord patterns: C, Cm, C7, Cmaj7, Csus4, etc.
+            const chordPattern = /^[A-G](#|b)?(m|maj|min|sus|aug|dim|add)?[0-9]?$/i;
+            return chordPattern.test(text);
+        }
+
         // Convert chord to tab notation
         function chordToTab(chordName) {
             const stringNames = ['e', 'B', 'G', 'D', 'A', 'E'];
@@ -591,7 +605,9 @@ note: Start slowly
                         html += `<div class="chord-label">[${escapeHtml(chordName)}]</div>`;
                     }
                     // Check if it's a chord shorthand (single chord name)
-                    else if (CHORD_LIBRARY[line] || CHORD_LIBRARY[line.toLowerCase()]) {
+                    else if (isChordName(line)) {
+                        // Add the chord label above the tab
+                        html += `<div class="chord-label">[${escapeHtml(line)}]</div>`;
                         const tab = chordToTab(line);
                         html += `<div class="tab-line">${tab}</div>`;
                     }
