@@ -6,6 +6,71 @@ The aim of this repository is to take a basic guitar tab and use it to create a 
 
 **tab_forge** is a simple Python tool that converts ASCII guitar tabs (the kind you'd write in a text file) into beautifully formatted PDFs. Perfect for creating clean, printable guitar tabs for practice or sharing.
 
+It also has a browser Practice view for playing Guitar Pro scores, slowing them
+down and looping passages. The existing markdown editor and Python PDF tools
+remain available.
+
+## Browser practice
+
+Requires Node.js 22.12+ and pnpm (or npm).
+
+```powershell
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+Open the local URL printed by Vite and choose **Open Practice**, or visit
+`http://127.0.0.1:5173/practice.html` when the server uses its default port.
+With npm, use `npm install` and `npm run dev` instead.
+
+1. Put your downloaded `.gp4` files directly in **`public/scores/`**.
+2. Open Practice and click **Refresh library**.
+3. Choose a file and click **Load selected**, then **Play**.
+
+The folder is scanned each time you refresh the library. Score files are ignored
+by Git. You can also use **Open a score** or drag a file onto the practice panel.
+Supported inputs include `.gp3`, `.gp4`, `.gp5`, `.gpx`, `.gp`, MusicXML and
+alphaTex. **Try the demo** loads an original exercise with guitar and bass tracks.
+
+Controls include 25–150% playback speed, play/pause/stop, loop, count-in,
+metronome, volume, track display and per-track mute/solo. Drag across the score
+to select a passage with beat/bar snapping, or use the bar selectors. Repeated
+bars are listed in playback order. Stop returns to the beginning of the selected
+passage; **Clear** restores the whole score. Space toggles playback, `L` toggles
+looping, and `[` / `]` adjust speed by 5% while focus is outside input controls.
+
+The **Fretting-hand guide** shows numbered fingers on a live fretboard: solid
+markers for this beat and outlined markers for the next. File-supplied finger
+hints take priority. Missing hints receive sequence-based suggestions labelled
+as suggestions; open strings need no fretting finger. Options include a
+left-handed mirror, note names, fret range and turning suggestions off. Click a
+beat while paused to preview its positions. Suggestions do not change your file.
+Unusual stretches or conflicting hints are flagged for checking; the guide
+shows beat positions rather than exact release times for every sustained note.
+
+The editor shares Practice's visual design, with responsive writing/preview
+panels and a **Print / PDF** action. Its examples, custom chord definitions,
+string numbering, multi-digit fret alignment and spaced `+` groups are supported.
+
+Playback is synthesised from the score, with local alphaTab assets and SoundFont.
+The markdown editor does not yet send its content to Practice. The proposed
+score-model migration and remaining phases are documented in
+[docs/practice-mode.md](docs/practice-mode.md).
+
+```powershell
+pnpm test
+pnpm test:browser
+pnpm build
+pnpm preview
+```
+
+Browser tests use Edge on Windows, or Playwright Chromium elsewhere. Set
+`TAB_FORGE_BROWSER_CHANNEL=chrome` to use installed Chrome. For Playwright's
+bundled Chromium on other platforms, first run `pnpm exec playwright install chromium`.
+The build produces `dist/`, including the scores currently in `public/scores/`;
+rebuild after changing that folder. The library is local and does not fetch tabs
+from Ultimate Guitar.
+
 ## Features
 
 - 🎸 Convert text-based guitar tabs to professional-looking PDFs

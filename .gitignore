@@ -208,3 +208,14 @@ __marimo__/
 
 # Generated PDF files
 *.pdf
+
+# Browser practice app
+node_modules/
+dist/
+test-results/
+playwright-report/
+/public/font/
+/public/soundfont/
+/public/scores/*
+!/public/scores/README.md
+.test-tools/

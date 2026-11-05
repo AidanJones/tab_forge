@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Practice · tab_forge</title>
+  <link rel="stylesheet" href="./practice/practice.css">
+</head>
+<body>
+  <header class="page-header">
+    <a class="brand" href="./index.html">tab_forge <span>/ Practice</span></a>
+    <a href="./index.html">Back to tab editor ↗</a>
+  </header>
+  <main>
+    <section class="intro">
+      <div><p class="eyebrow">A little slower. A little better.</p><h1>Make time to play.</h1>
+        <p>Bring a score, find your tempo, and work on one passage at a time.</p></div>
+      <div class="file-actions">
+        <button id="open-file" class="primary">Open a score</button>
+        <input id="file" type="file" accept=".gp3,.gp4,.gp5,.gpx,.gp,.xml,.musicxml,.mxl,.tex,.alphatex" hidden>
+        <button id="demo">Try the demo</button>
+      </div>
+    </section>
+    <section class="library" aria-label="Local score library">
+      <div><h2>Your score library</h2><p>Put files in <code>public/scores</code>, then refresh this list.</p></div>
+      <div class="library-actions">
+        <label for="library-score" class="sr-only">Library score</label>
+        <select id="library-score" disabled><option>Loading library…</option></select>
+        <button id="load-library" disabled>Load selected</button>
+        <button id="refresh-library">Refresh library</button>
+      </div>
+      <p id="library-status" role="status" aria-live="polite"></p>
+    </section>
+    <section class="workspace" id="drop-zone" aria-label="Practice workspace">
+      <div class="score-heading">
+        <div><p class="eyebrow" id="source-label">Your practice space</p><h2 id="score-title">Choose a score to begin</h2><p id="score-artist"></p></div>
+        <p class="status" id="status" role="status" aria-live="polite">Open a file or try the original demo exercise.</p>
+      </div>
+      <p id="error" class="error" role="alert" hidden></p>
+      <noscript><p class="error">Enable JavaScript to render scores and play audio.</p></noscript>
+      <div class="transport" aria-label="Playback controls">
+        <div class="play-buttons">
+          <button id="play" class="primary" disabled aria-keyshortcuts="Space">Play</button>
+          <button id="stop" disabled>Stop</button>
+        </div>
+        <label class="speed-control" for="speed">Speed <output id="speed-value" for="speed">100%</output>
+          <input id="speed" type="range" min="25" max="150" step="5" value="100" disabled>
+        </label>
+        <div class="toggles">
+          <label><input id="loop" type="checkbox" disabled> Loop</label>
+          <label><input id="count-in" type="checkbox" disabled> Count-in</label>
+          <label><input id="metronome" type="checkbox" disabled> Metronome</label>
+        </div>
+        <label class="volume-control" for="volume">Volume
+          <input id="volume" type="range" min="0" max="100" value="65" disabled>
+        </label>
+      </div>
+      <div class="position"><span id="time">0:00 / 0:00</span><progress id="position" value="0" max="1" aria-label="Playback position"></progress><span id="tempo"></span></div>
+      <details class="practice-settings" open>
+        <summary>Passage &amp; tracks</summary>
+        <div class="settings-grid">
+          <div>
+            <h3>Choose a passage</h3>
+            <p>Drag across notes on the score, or select bars below.</p>
+            <div class="range-controls">
+              <label>Snap to <select id="snap"><option value="bar">Bars</option><option value="beat">Beats</option></select></label>
+              <label>From <select id="from-bar" disabled aria-label="From bar"></select></label>
+              <label>Through <select id="to-bar" disabled aria-label="Through bar"></select></label>
+              <button id="select-bars" disabled>Select bars</button>
+              <button id="clear-range" disabled>Clear</button>
+            </div>
+            <p id="range-label">Whole score · turn on Loop to repeat.</p>
+          </div>
+          <div>
+            <h3>Tracks</h3>
+            <label class="track-select">Show <select id="track" disabled aria-label="Displayed track"><option>No score loaded</option></select></label>
+            <p>All tracks play unless muted or another track is soloed.</p>
+            <div id="mixer" class="mixer"></div>
+          </div>
+        </div>
+      </details>
+      <section id="finger-guide" class="finger-guide" aria-labelledby="finger-title">
+        <div class="finger-heading"><div><h3 id="finger-title">Fretting-hand guide</h3><p id="finger-status">Load a score to see finger positions.</p></div>
+          <div class="finger-options">
+            <label><input id="finger-suggestions" type="checkbox" checked> Suggest fingers</label>
+            <label><input id="left-handed" type="checkbox"> Left-handed</label>
+            <label><input id="note-names" type="checkbox"> Note names</label>
+            <label>Frets <select id="fret-count"><option value="12">12</option><option value="15">15</option><option value="24">24</option></select></label>
+          </div>
+        </div>
+        <p class="finger-legend"><span>1 Index</span><span>2 Middle</span><span>3 Ring</span><span>4 Little</span><span>T Thumb</span><span>○ Open string</span><span>Solid: this beat · Outline: next</span></p>
+        <div id="fretboard-diagram" class="fretboard-diagram"></div>
+        <ul id="finger-notes" class="finger-notes" aria-label="Finger positions for this beat"></ul>
+        <p id="finger-caution" class="finger-caution">Suggested fingers are starting points; written finger hints take priority.</p>
+      </section>
+      <div id="score-viewport" tabindex="0" aria-label="Score. Drag across beats to select a passage.">
+        <div id="empty-state"><span class="empty-mark" aria-hidden="true">♩</span><h3>Your next practice starts here.</h3><p>Drop a Guitar Pro, MusicXML or alphaTex file anywhere in this panel.</p><p class="muted">Files stay in your browser.</p></div>
+        <div id="score"></div>
+      </div>
+      <footer class="workspace-footer"><span>Space play/pause · L loop · [ / ] speed ±5%</span><span>Guitar Pro · MusicXML · alphaTex</span></footer>
+    </section>
+    <p class="footnote">Synthesised score playback. The markdown editor connects to Practice in the next phase.</p>
+  </main>
+  <script type="module" src="./practice/main.js"></script>
+</body>
+</html>

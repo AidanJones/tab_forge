@@ -3,252 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guitar Tab Viewer</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            padding: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-            background: #f5f5f5;
-        }
-
-        header {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        h1 {
-            font-size: 24px;
-            margin-bottom: 10px;
-            color: #333;
-        }
-
-        .subtitle {
-            color: #666;
-            font-size: 14px;
-        }
-
-        .input-section {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        textarea {
-            width: 100%;
-            height: 200px;
-            padding: 12px;
-            font-family: 'Monaco', 'Courier New', monospace;
-            font-size: 13px;
-            border: 2px solid #ddd;
-            border-radius: 4px;
-            resize: vertical;
-        }
-
-        textarea:focus {
-            outline: none;
-            border-color: #4a9eff;
-        }
-
-        .button-row {
-            margin-top: 10px;
-            display: flex;
-            gap: 10px;
-        }
-
-        button {
-            padding: 8px 16px;
-            background: #4a9eff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        button:hover {
-            background: #3a8eef;
-        }
-
-        button.secondary {
-            background: #6c757d;
-        }
-
-        button.secondary:hover {
-            background: #5a6268;
-        }
-
-        .output-section {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .metadata {
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #eee;
-        }
-
-        .song-title {
-            font-size: 28px;
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: #333;
-        }
-
-        .song-artist {
-            font-size: 18px;
-            color: #666;
-            margin-bottom: 12px;
-        }
-
-        .song-info {
-            font-size: 14px;
-            color: #888;
-        }
-
-        .chords-section {
-            margin-bottom: 30px;
-        }
-
-        .chords-section h3 {
-            font-size: 18px;
-            margin-bottom: 15px;
-            color: #333;
-        }
-
-        .chord-diagrams {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-
-        .chord-diagram {
-            text-align: center;
-        }
-
-        .chord-name {
-            font-weight: bold;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        .chord-grid {
-            font-family: 'Monaco', 'Courier New', monospace;
-            font-size: 11px;
-            line-height: 1.3;
-            white-space: pre;
-            background: #f9f9f9;
-            padding: 10px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-        }
-
-        .section {
-            margin-bottom: 40px;
-        }
-
-        .section-header {
-            font-size: 20px;
-            font-weight: bold;
-            color: #4a9eff;
-            margin-bottom: 15px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #4a9eff;
-        }
-
-        .tab-line {
-            font-family: 'Monaco', 'Courier New', monospace;
-            font-size: 13px;
-            line-height: 1.5;
-            white-space: pre;
-            background: #f9f9f9;
-            padding: 15px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            overflow-x: auto;
-        }
-
-        .lyrics {
-            color: #d63384;
-            font-style: italic;
-            margin-bottom: 15px;
-            font-size: 15px;
-        }
-
-        .lyrics::before {
-            content: "♪ ";
-        }
-
-        .note {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 10px;
-            margin-bottom: 15px;
-            font-size: 14px;
-            color: #856404;
-        }
-
-        .note::before {
-            content: "Note: ";
-            font-weight: bold;
-        }
-
-        .chord-label {
-            font-weight: bold;
-            color: #4a9eff;
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #999;
-        }
-
-        .empty-state h2 {
-            font-size: 20px;
-            margin-bottom: 10px;
-        }
-
-        @media print {
-            body {
-                background: white;
-            }
-
-            .input-section {
-                display: none;
-            }
-
-            .output-section {
-                box-shadow: none;
-            }
-        }
-    </style>
+    <title>Editor · tab_forge</title>
+    <link rel="stylesheet" href="./editor.css">
 </head>
 <body>
-    <header>
-        <h1>🎸 Guitar Tab Viewer</h1>
-        <p class="subtitle">Paste your tab markdown and view formatted tabs, chords, and lyrics</p>
+    <header class="page-header">
+        <a class="brand" href="./index.html">tab_forge <span>/ Editor</span></a>
+        <a href="./practice.html">Open Practice ↗</a>
     </header>
-
-    <div class="input-section">
-        <textarea id="input" placeholder="Paste your tab markdown here...
+    <main>
+      <section class="intro">
+        <div><p class="eyebrow">Catch the riff. Keep the lesson.</p><h1>A place for your playing.</h1>
+          <p>Turn lesson notes into clear tabs, chord shapes and a sheet you can keep.</p></div>
+        <a class="practice-link" href="./practice.html">Ready to play along? <span>Open Practice ↗</span></a>
+      </section>
+      <div class="editor-workspace">
+      <section class="input-section" aria-labelledby="source-title">
+        <div class="panel-heading"><div><p class="eyebrow">01 / Write</p><h2 id="source-title">Your lesson notes</h2></div><span class="format-badge">Markdown</span></div>
+        <label class="sr-only" for="input">Tab markdown</label>
+        <textarea id="input" spellcheck="false" placeholder="Paste your tab markdown here...
 
 Example:
 key: C
@@ -268,19 +41,34 @@ note: Start slowly
 [Am]
 0s5 1f5s 2f5s 2f4s"></textarea>
         <div class="button-row">
-            <button onclick="updateOutput()">Update</button>
-            <button onclick="copyShareLink()" class="secondary">Copy Share Link</button>
-            <button onclick="loadExample()" class="secondary">Load Example</button>
+            <button onclick="updateOutput()" class="primary">Update preview</button>
+            <button onclick="loadExample()">Load example</button>
+            <button onclick="copyShareLink()">Copy share link</button>
         </div>
-    </div>
-
+        <div class="editor-help"><span>Ctrl / ⌘ + Enter to update</span><span>String 1 = high e</span></div>
+        <details class="notation-help"><summary>A little notation help</summary><dl>
+          <div><dt><code>3f1s</code></dt><dd>Fret 3, string 1</dd></div>
+          <div><dt><code>0s3</code></dt><dd>Open string 3</dd></div>
+          <div><dt><code>2f5s+2f4s</code></dt><dd>Play together</dd></div>
+          <div><dt><code>[Verse]</code></dt><dd>Start a section</dd></div>
+          <div><dt><code>note: slowly</code></dt><dd>Add a reminder</dd></div>
+          <div><dt><code>"Your lyrics"</code></dt><dd>Keep the words</dd></div>
+        </dl></details>
+      </section>
+      <section class="preview-panel" aria-labelledby="preview-title">
+        <div class="panel-heading"><div><p class="eyebrow">02 / Review</p><h2 id="preview-title">Your practice sheet</h2></div><button onclick="window.print()" class="print-button">Print / PDF</button></div>
     <div class="output-section" id="output">
         <div class="empty-state">
-            <h2>No tabs yet</h2>
-            <p>Enter tab notation above and click "Update" to see it formatted</p>
+            <span class="empty-mark" aria-hidden="true">♩</span>
+            <h3>Every song starts with a few notes.</h3>
+            <p>Write your lesson notes, then update the preview.</p>
+            <p class="empty-hint">Or load an example to find your rhythm.</p>
         </div>
     </div>
-
+      </section>
+      </div>
+      <p class="page-footnote">A space to write. A space to practise. <a href="./practice.html">Play Guitar Pro files in Practice ↗</a></p>
+    </main>
     <script>
         // Chord library - frets from low E to high e
         const CHORD_LIBRARY = {
@@ -402,22 +190,23 @@ note: Start slowly
             const stringNames = ['e', 'B', 'G', 'D', 'A', 'E'];
             const strings = [[], [], [], [], [], []]; // 6 strings
 
-            const elements = notesLine.split(/\s+/).filter(e => e);
+            const elements = notesLine.replace(/\s*\+\s*/g, '+').split(/\s+/).filter(e => e);
 
             for (const element of elements) {
                 if (element.includes('+')) {
                     // Multiple notes at once
                     const notes = parseNoteNotation(element);
                     if (notes.length === 0) continue;
+                    const width = Math.max(...notes.map(note => String(note.fret).length));
 
                     const playedStrings = new Set(notes.map(n => n.string));
                     for (let i = 0; i < 6; i++) {
-                        const stringNum = 6 - i; // Convert index to string number (1-6)
+                        const stringNum = i + 1; // String 1 is high e.
                         const note = notes.find(n => n.string === stringNum);
                         if (note) {
-                            strings[i].push(note.fret.toString());
+                            strings[i].push(note.fret.toString().padEnd(width, '-'));
                         } else {
-                            strings[i].push('-');
+                            strings[i].push('-'.repeat(width));
                         }
                     }
                 } else if (element.match(/\d+f\d+s|0s\d+/)) {
@@ -427,11 +216,11 @@ note: Start slowly
 
                     const note = notes[0];
                     for (let i = 0; i < 6; i++) {
-                        const stringNum = 6 - i;
+                        const stringNum = i + 1;
                         if (stringNum === note.string) {
                             strings[i].push(note.fret.toString());
                         } else {
-                            strings[i].push('-');
+                            strings[i].push('-'.repeat(String(note.fret).length));
                         }
                     }
                 }
@@ -454,7 +243,7 @@ note: Start slowly
             text = text.trim();
 
             // Check if it's in the chord library (case-insensitive)
-            if (CHORD_LIBRARY[text] || CHORD_LIBRARY[text.toLowerCase()]) {
+            if (Object.keys(CHORD_LIBRARY).some(name => name.toLowerCase() === text.toLowerCase())) {
                 return true;
             }
 
@@ -464,11 +253,17 @@ note: Start slowly
         }
 
         // Convert chord to tab notation
-        function chordToTab(chordName) {
+        function chordToTab(chordName, customChords = {}) {
             const stringNames = ['e', 'B', 'G', 'D', 'A', 'E'];
 
             // Look up chord in library or custom chords
-            let frets = CHORD_LIBRARY[chordName] || CHORD_LIBRARY[chordName.toLowerCase()];
+            const customName = Object.keys(customChords).find(name => name.toLowerCase() === chordName.toLowerCase());
+            const builtInName = Object.keys(CHORD_LIBRARY).find(name => name.toLowerCase() === chordName.toLowerCase());
+            if (customName !== undefined && !/^[xX0-9]{6}$/.test(customChords[customName])) {
+                return `Invalid shape for "${chordName}": use six fret digits or x, from low E to high e.`;
+            }
+            let frets = customName === undefined ? CHORD_LIBRARY[builtInName]
+                : customChords[customName].split('').map(value => /x/i.test(value) ? -1 : Number(value));
 
             if (!frets) {
                 return `Chord "${chordName}" not found`;
@@ -552,8 +347,8 @@ note: Start slowly
                     html += `<div class="song-artist">${escapeHtml(data.metadata.artist)}</div>`;
                 }
                 const info = [];
-                if (data.metadata.key) info.push(`Key: ${data.metadata.key}`);
-                if (data.metadata.tuning) info.push(`Tuning: ${data.metadata.tuning}`);
+                if (data.metadata.key) info.push(`Key: ${escapeHtml(data.metadata.key)}`);
+                if (data.metadata.tuning) info.push(`Tuning: ${escapeHtml(data.metadata.tuning)}`);
                 if (info.length > 0) {
                     html += `<div class="song-info">${info.join(' • ')}</div>`;
                 }
@@ -605,11 +400,11 @@ note: Start slowly
                         html += `<div class="chord-label">[${escapeHtml(chordName)}]</div>`;
                     }
                     // Check if it's a chord shorthand (single chord name)
-                    else if (isChordName(line)) {
+                    else if (isChordName(line) || Object.keys(data.chords).some(name => name.toLowerCase() === line.toLowerCase())) {
                         // Add the chord label above the tab
                         html += `<div class="chord-label">[${escapeHtml(line)}]</div>`;
-                        const tab = chordToTab(line);
-                        html += `<div class="tab-line">${tab}</div>`;
+                        const tab = chordToTab(line, data.chords);
+                        html += `<div class="tab-line">${escapeHtml(tab)}</div>`;
                     }
                     // Otherwise it's tab notation
                     else if (line.match(/\d+f\d+s|0s\d+/)) {
@@ -722,8 +517,7 @@ note: End with a nice arpeggio`;
 
             if (tabData) {
                 try {
-                    const decoded = decodeURIComponent(tabData);
-                    document.getElementById('input').value = decoded;
+                    document.getElementById('input').value = tabData;
                     updateOutput();
                 } catch (e) {
                     console.error('Error loading tab from URL:', e);
