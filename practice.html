@@ -34,7 +34,10 @@
     <section class="workspace" id="drop-zone" aria-label="Practice workspace">
       <div class="score-heading">
         <div><p class="eyebrow" id="source-label">Your practice space</p><h2 id="score-title">Choose a score to begin</h2><p id="score-artist"></p></div>
-        <p class="status" id="status" role="status" aria-live="polite">Open a file or try the original demo exercise.</p>
+        <div class="score-actions">
+          <p class="status" id="status" role="status" aria-live="polite">Open a file or try the original demo exercise.</p>
+          <div><button id="save-gp" disabled>Save Guitar Pro (.gp)</button> <button id="save-alphatex" disabled>Save alphaTex</button></div>
+        </div>
       </div>
       <p id="error" class="error" role="alert" hidden></p>
       <noscript><p class="error">Enable JavaScript to render scores and play audio.</p></noscript>
@@ -79,17 +82,37 @@
           </div>
         </div>
       </details>
+      <details class="midi-settings">
+        <summary>USB MIDI · play on your FM1</summary>
+        <div class="midi-controls">
+          <button id="connect-midi">Connect MIDI</button>
+          <label>Output <select id="midi-output" disabled aria-label="MIDI output"><option>Connect MIDI first</option></select></label>
+          <label>Channel <select id="midi-channel" aria-label="MIDI channel"></select></label>
+          <label><input id="midi-enabled" type="checkbox" disabled> Send notes</label>
+          <label><input id="midi-monitor" type="checkbox"> Also play browser sound</label>
+          <button id="midi-test" disabled>Test note</button>
+          <button id="midi-panic" disabled>All notes off</button>
+        </div>
+        <p id="midi-status" role="status" aria-live="polite">Connect your FM1 by USB, then connect MIDI and choose its output.</p>
+        <p class="midi-help">Sends the displayed track on the chosen channel. Select a sound on the FM1; patches and MIDI clock are left unchanged. Pitch-bend effects are not sent.</p>
+      </details>
       <section id="finger-guide" class="finger-guide" aria-labelledby="finger-title">
+        <div class="fretboard-tabs" role="tablist" aria-label="Fretboard view">
+          <button id="fretboard-diagram-tab" type="button" role="tab" data-view="diagram" aria-controls="fretboard-diagram" aria-selected="true">Diagram</button>
+          <button id="fretboard-video-tab" type="button" role="tab" data-view="video" aria-controls="fretboard-diagram" aria-selected="false" tabindex="-1">Video view</button>
+        </div>
         <div class="finger-heading"><div><h3 id="finger-title">Fretting-hand guide</h3><p id="finger-status">Load a score to see finger positions.</p></div>
           <div class="finger-options">
             <label><input id="finger-suggestions" type="checkbox" checked> Suggest fingers</label>
             <label><input id="left-handed" type="checkbox"> Left-handed</label>
             <label><input id="note-names" type="checkbox"> Note names</label>
+            <label id="hand-option" hidden><input id="show-hand" type="checkbox"> Show hand</label>
             <label>Frets <select id="fret-count"><option value="12">12</option><option value="15">15</option><option value="24">24</option></select></label>
           </div>
         </div>
         <p class="finger-legend"><span>1 Index</span><span>2 Middle</span><span>3 Ring</span><span>4 Little</span><span>T Thumb</span><span>○ Open string</span><span>Solid: this beat · Outline: next</span></p>
-        <div id="fretboard-diagram" class="fretboard-diagram"></div>
+        <div id="fretboard-diagram" class="fretboard-diagram" role="tabpanel" aria-labelledby="fretboard-diagram-tab"></div>
+        <p id="hand-status" class="hand-status"></p>
         <ul id="finger-notes" class="finger-notes" aria-label="Finger positions for this beat"></ul>
         <p id="finger-caution" class="finger-caution">Suggested fingers are starting points; written finger hints take priority.</p>
       </section>
@@ -99,8 +122,8 @@
       </div>
       <footer class="workspace-footer"><span>Space play/pause · L loop · [ / ] speed ±5%</span><span>Guitar Pro · MusicXML · alphaTex</span></footer>
     </section>
-    <p class="footnote">Synthesised score playback. The markdown editor connects to Practice in the next phase.</p>
+    <p class="footnote">Synthesised score playback. <a href="./index.html">Write and play your own lesson notes in the editor ↗</a></p>
   </main>
-  <script type="module" src="./practice/main.js"></script>
+  <script type="module" src="./practice/entry.js"></script>
 </body>
 </html>

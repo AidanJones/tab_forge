@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editor · tab_forge</title>
+    <link rel="stylesheet" href="./practice/practice.css">
     <link rel="stylesheet" href="./editor.css">
 </head>
 <body>
@@ -14,7 +15,7 @@
     <main>
       <section class="intro">
         <div><p class="eyebrow">Catch the riff. Keep the lesson.</p><h1>A place for your playing.</h1>
-          <p>Turn lesson notes into clear tabs, chord shapes and a sheet you can keep.</p></div>
+          <p>Write a riff, hear it played, and follow the fingers on the fretboard.</p></div>
         <a class="practice-link" href="./practice.html">Ready to play along? <span>Open Practice ↗</span></a>
       </section>
       <div class="editor-workspace">
@@ -44,6 +45,7 @@ note: Start slowly
             <button onclick="updateOutput()" class="primary">Update preview</button>
             <button onclick="loadExample()">Load example</button>
             <button onclick="copyShareLink()">Copy share link</button>
+            <button id="save-notes">Save notes (.md)</button>
         </div>
         <div class="editor-help"><span>Ctrl / ⌘ + Enter to update</span><span>String 1 = high e</span></div>
         <details class="notation-help"><summary>A little notation help</summary><dl>
@@ -56,7 +58,15 @@ note: Start slowly
         </dl></details>
       </section>
       <section class="preview-panel" aria-labelledby="preview-title">
-        <div class="panel-heading"><div><p class="eyebrow">02 / Review</p><h2 id="preview-title">Your practice sheet</h2></div><button onclick="window.print()" class="print-button">Print / PDF</button></div>
+        <div class="panel-heading"><div><p class="eyebrow">02 / Play</p><h2 id="preview-title">Your score &amp; finger guide</h2></div><button onclick="window.print()" class="print-button">Print / PDF</button></div>
+        <div class="lesson-timing">
+          <label>Base tempo <input id="editor-tempo" type="number" min="40" max="240" value="80" step="1"> BPM</label>
+          <label>Each note/chord <select id="editor-duration"><option value="4">Quarter note</option><option value="8">Eighth note</option><option value="16">Sixteenth note</option></select></label>
+          <p>Draft rhythm: lesson notes contain no timing. Playback uses the note length above, in 4/4.</p>
+          <p id="editor-playback-status" role="status">Write a section and a few notes, then update the preview.</p>
+        </div>
+        <div id="editor-player"></div>
+        <details class="printable-sheet" open><summary>Lesson notes &amp; printable sheet</summary>
     <div class="output-section" id="output">
         <div class="empty-state">
             <span class="empty-mark" aria-hidden="true">♩</span>
@@ -65,6 +75,7 @@ note: Start slowly
             <p class="empty-hint">Or load an example to find your rhythm.</p>
         </div>
     </div>
+        </details>
       </section>
       </div>
       <p class="page-footnote">A space to write. A space to practise. <a href="./practice.html">Play Guitar Pro files in Practice ↗</a></p>
@@ -439,6 +450,7 @@ note: Start slowly
             const input = document.getElementById('input').value;
             const data = parseMarkdown(input);
             render(data);
+            document.dispatchEvent(new CustomEvent('tab-forge:editor-update', { detail: { data, chords: CHORD_LIBRARY } }));
 
             // Update URL with encoded input
             const encoded = encodeURIComponent(input);
@@ -532,5 +544,6 @@ note: End with a nice arpeggio`;
             }
         });
     </script>
+    <script type="module" src="./editor-player.js"></script>
 </body>
 </html>

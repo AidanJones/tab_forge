@@ -52,10 +52,60 @@ The editor shares Practice's visual design, with responsive writing/preview
 panels and a **Print / PDF** action. Its examples, custom chord definitions,
 string numbering, multi-digit fret alignment and spaced `+` groups are supported.
 
+In **Fretting-hand guide → Video view**, the neck faces you like a video lesson:
+high E is at the bottom, fret 12 is on the left and open strings are on the right.
+Enable **Show hand** for an illustrated hand whose numbered fingertips follow
+the current notes. Open strings/rests show released fingers. **Left-handed**
+mirrors the neck and hand together. On small screens, the view pans to the active
+notes; you can also scroll along the neck. The normal **Diagram** tab remains
+available. This is an illustrative 2D pose guide, not a photorealistic hand.
+
 Playback is synthesised from the score, with local alphaTab assets and SoundFont.
-The markdown editor does not yet send its content to Practice. The proposed
-score-model migration and remaining phases are documented in
+The editor now includes the same player and finger guide as Practice. Click
+**Update preview** to hear the current lesson. Since legacy lesson notes have no
+written rhythm, choose a base tempo and a uniform note length; the preview labels
+this as draft rhythm and pads the last 4/4 bar with rests. Editing stops playback
+until you update again. Legacy playback currently supports standard six-string
+tuning; other tunings produce an explicit message instead of wrong pitches.
+The proposed score-model migration and remaining phases are documented in
 [docs/practice-mode.md](docs/practice-mode.md).
+
+### Save your created score
+
+After **Update preview**, use **Save Guitar Pro (.gp)** or **Save alphaTex** in
+the score header. Guitar Pro export is the GP7+ `.gp` format; `.gp4` files can be
+imported but are not an export format. The score includes its notes, simultaneous
+chords, tuning and base tempo/durations. A draft-rhythm subtitle records the
+assumed uniform timing. Playback slowdown is a practice setting and does not
+rewrite the exported score's base tempo.
+
+Use **Save notes (.md)** beside the editor controls to retain the complete lesson
+source, including lyrics and annotations that are not part of the musical export.
+GP and alphaTex downloads can be opened in Practice via the file picker or by
+placing them in `public/scores/` and refreshing the library. The same export
+buttons also work on scores opened directly in Practice.
+
+### USB MIDI output (including M-VAVE FM1)
+
+In either player, open **USB MIDI · play on your FM1**:
+
+1. Connect the FM1 to the computer with a USB data cable and choose a sound on it.
+2. Use Chrome or Edge over the local app URL. Click **Connect MIDI** and allow
+   the browser's MIDI permission request.
+3. Select the FM1 output, choose its receiving MIDI channel (1 by default), and
+   enable **Send notes**. **Test note** sends a short middle C.
+4. Press **Play**. Only the displayed track is sent, respecting mute/solo. Browser
+   sound is off while MIDI output is enabled unless **Also play browser sound**
+   is checked. The Volume slider scales outgoing note velocity.
+
+Stop, pause, seek, loop changes, track changes, unplug and page exit release held
+notes. **All notes off** is also available. Output uses alphaTab's played-note
+event stream at its current playback speed; it does not introduce another score
+clock. Hardware latency still depends on the browser, USB connection and device.
+The adapter sends note-on/off plus sustain-off/all-notes-off cleanup on one chosen
+channel. It does not send program changes, MIDI clock, SysEx or pitch-bend effects.
+Set the FM1's patch and receiving channel on the device. Automated tests use a
+simulated output port; an actual FM1 listening check is still needed.
 
 ```powershell
 pnpm test

@@ -1,0 +1,51 @@
+import { test, expect } from '@playwright/test';
+
+test('video view rotates the neck and places the optional hand on the active fret', async ({ page }) => {
+  await page.goto('/index.html');
+  await page.locator('#input').fill('title: Mirror this\n[Intro]\n1f1s 2f2s 3f3s 4f4s');
+  await page.getByRole('button', { name: 'Update preview', exact: true }).click();
+  await expect(page.locator('#play')).toBeEnabled();
+  await expect(page.locator('#hand-option')).toBeHidden();
+  await page.getByRole('tab', { name: 'Video view', exact: true }).click();
+  await expect(page.getByRole('tab', { name: 'Video view', exact: true })).toHaveAttribute('aria-selected', 'true');
+  const labels = await page.locator('#fretboard-diagram .string-label').evaluateAll(nodes => nodes.map(node => ({ text: node.textContent, y: Number(node.getAttribute('y')) })));
+  expect(labels.find(label => label.text === 'E4').y).toBeGreaterThan(labels.find(label => label.text === 'E2').y);
+  const frets = await page.locator('#fretboard-diagram .fret-number').evaluateAll(nodes => nodes.map(node => ({ text: node.textContent, x: Number(node.getAttribute('x')) })));
+  expect(frets.find(fret => fret.text === '12').x).toBeLessThan(frets.find(fret => fret.text === '0').x);
+  await page.locator('#show-hand').check();
+  await expect(page.locator('.hand-overlay')).toHaveCount(1);
+  const finger = await page.locator('.current-note').getAttribute('data-finger');
+  const contact = page.locator(`.hand-finger[data-finger="${finger}"]`);
+  const marker = page.locator('.current-note circle');
+  expect(await contact.getAttribute('data-tip-x')).toBe(await marker.getAttribute('cx'));
+  expect(await contact.getAttribute('data-tip-y')).toBe(await marker.getAttribute('cy'));
+  await page.locator('#finger-guide').screenshot({ path: 'test-results/video-hand-guide.png' });
+  await page.locator('#play').click();
+  await expect(page.locator('.current-note')).toHaveAttribute('data-string', '2');
+  await expect(page.locator('.hand-finger[data-active=true]')).toHaveCount(1);
+  await page.locator('#stop').click();
+  await page.getByRole('tab', { name: 'Diagram', exact: true }).click();
+  await expect(page.locator('.hand-overlay')).toHaveCount(0);
+  await expect(page.locator('#hand-option')).toBeHidden();
+});
+
+test('view tabs are keyboard accessible and the hand can be mirrored on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/practice.html');
+  await page.locator('#demo').click();
+  await expect(page.locator('#play')).toBeEnabled();
+  await page.getByRole('tab', { name: 'Diagram', exact: true }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('tab', { name: 'Video view', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page.locator('#show-hand').check();
+  await expect(page.locator('#hand-status')).toContainText('Open strings');
+  const box = await page.locator('#fretboard-diagram').boundingBox();
+  const active = await page.locator('.current-note circle').boundingBox();
+  expect(active.x).toBeGreaterThanOrEqual(box.x);
+  expect(active.x + active.width).toBeLessThanOrEqual(box.x + box.width);
+  const before = await page.locator('.current-note circle').getAttribute('cx');
+  await page.locator('#left-handed').check();
+  expect(await page.locator('.current-note circle').getAttribute('cx')).not.toBe(before);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await page.locator('#finger-guide').screenshot({ path: 'test-results/video-hand-mobile.png' });
+});

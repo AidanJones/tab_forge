@@ -1,0 +1,69 @@
+import { test, expect } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
+import { importer, Settings } from '@coderline/alphatab';
+
+test('editor lesson notes render a playable score and live finger guide', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/index.html');
+  await page.locator('#input').fill('title: My playable riff\ntuning: standard\n[Intro]\n3f1s 0s6 2f5s + 2f4s');
+  await page.getByRole('button', { name: 'Update preview', exact: true }).click();
+  await expect(page.locator('#play')).toBeEnabled();
+  await expect(page.locator('#score-title')).toHaveText('My playable riff');
+  await expect(page.locator('#editor-playback-status')).toContainText('3 notes/chords');
+  await expect(page.locator('#finger-notes')).toContainText('String 1 · fret 3');
+  await page.locator('#speed').fill('50');
+  await page.locator('#play').click();
+  await expect(page.locator('#play')).toHaveText('Pause');
+  await expect.poll(() => page.locator('#position').evaluate(element => element.value)).toBeGreaterThan(100);
+  await page.locator('#input').fill('title: Changed riff\n[Intro]\n0s3');
+  await expect(page.locator('#editor-playback-status')).toContainText('Notes changed');
+  await expect(page.locator('#editor-player')).toHaveAttribute('inert', '');
+  await page.getByRole('button', { name: 'Update preview', exact: true }).click();
+  await expect(page.locator('#play')).toBeEnabled();
+  await expect(page.locator('#score-title')).toHaveText('Changed riff');
+  await expect(page.locator('#finger-notes')).toContainText('String 3 · fret 0');
+  await page.locator('#editor-duration').selectOption('8');
+  await expect(page.locator('#editor-playback-status')).toContainText('eighth note each');
+  await page.screenshot({ path: 'test-results/editor-player-desktop.png', fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await page.screenshot({ path: 'test-results/editor-player-mobile.png', fullPage: true });
+  expect(errors).toEqual([]);
+});
+
+test('invalid editor notes stop playback and cannot play stale content', async ({ page }) => {
+  await page.goto('/index.html');
+  await page.getByRole('button', { name: 'Load example', exact: true }).click();
+  await expect(page.locator('#play')).toBeEnabled();
+  await page.locator('#input').fill('tuning: drop D\n[Intro]\n0s6');
+  await page.getByRole('button', { name: 'Update preview', exact: true }).click();
+  await expect(page.locator('#editor-playback-status')).toContainText('does not yet understand tuning');
+  await expect(page.locator('#editor-player')).toHaveAttribute('inert', '');
+});
+
+test('creator saves playable Guitar Pro, alphaTex and original lesson notes', async ({ page }) => {
+  await page.goto('/index.html');
+  const source = 'title: Exported riff\n[Intro]\n3f1s 0s6 2f5s + 2f4s\nnote: play gently';
+  await page.locator('#input').fill(source);
+  await page.getByRole('button', { name: 'Update preview', exact: true }).click();
+  await expect(page.locator('#save-gp')).toBeEnabled();
+  const gpDownload = page.waitForEvent('download');
+  await page.locator('#save-gp').click();
+  const gp = await gpDownload;
+  expect(gp.suggestedFilename()).toBe('Exported riff.gp');
+  const score = importer.ScoreLoader.loadScoreFromBytes(await readFile(await gp.path()), new Settings());
+  expect(score.title).toBe('Exported riff');
+  expect(score.subTitle).toContain('Draft rhythm');
+  expect(score.tracks[0].staves[0].bars[0].voices[0].beats[2].notes).toHaveLength(2);
+  const texDownload = page.waitForEvent('download');
+  await page.locator('#save-alphatex').click();
+  const tex = await texDownload;
+  expect(tex.suggestedFilename()).toBe('Exported riff.alphatex');
+  expect(importer.ScoreLoader.loadAlphaTex(await readFile(await tex.path(), 'utf8'), new Settings()).title).toBe('Exported riff');
+  const notesDownload = page.waitForEvent('download');
+  await page.locator('#save-notes').click();
+  const notes = await notesDownload;
+  expect(notes.suggestedFilename()).toBe('Exported riff.md');
+  expect(await readFile(await notes.path(), 'utf8')).toBe(source);
+});

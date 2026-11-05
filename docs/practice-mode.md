@@ -323,3 +323,75 @@ The browser's reviewed string inversion, spaced-plus parsing, multi-digit
 alignment, custom/case-insensitive chord lookup, metadata HTML escaping and
 double URL decoding issues were also fixed. The separate Python parser findings
 remain for the model migration phase.
+
+## Follow-up: editor playback and USB MIDI
+
+The editor now mounts the same workspace markup and `mountPractice()` controller
+as Practice. `practice/entry.js` mounts the standalone page; `editor-player.js`
+mounts an embedded workspace with scoped controls, so playback/fingering/MIDI
+behaviour stays shared rather than duplicated. The original printable lesson
+sheet remains available below the player. No iframe or audio clock is added.
+
+`lesson-converter.js` imports the existing parsed lesson into alphaTex. It preserves
+string/fret positions and simultaneous groups, resolves custom chord shapes before
+case-insensitive library lookup, and escapes metadata for alphaTex. It explicitly
+assumes uniform quarter/eighth/sixteenth duration at a chosen base tempo in 4/4,
+pads the final bar, and labels this draft rhythm. Unsupported tuning, duplicate
+strings in a chord and malformed notes produce actionable errors. Text annotations
+stay in the printable source. Editing invalidates and stops the old playable
+preview until a successful update. This is a first forward-conversion slice;
+per-note rhythm authoring, reverse conversion and project save/open remain pending.
+
+`midi-output.js` wraps Web MIDI output. Permission is requested from an explicit
+Connect MIDI click with SysEx disabled. The user selects an output and enables it;
+an FM1-like port name is preferred in the list but never armed automatically.
+Only the displayed, audible track is routed to the selected channel. The player
+normalises alphaTab's typed NoteOn/NoteOff events (its enum values must not be
+interpreted as raw MIDI status bytes), sorts each played-event batch by tick,
+then emits actual MIDI 1.0 note messages. Velocity follows the Volume slider.
+
+The synth continues to own tempo, looping and the playback timeline, even with
+browser monitoring muted. Stop/pause, seek/loop reset, file/track/range changes,
+mute/solo, page exit and port failure release held MIDI notes. A note ledger
+handles overlapping pitches mapped to one output channel. No patch changes,
+SysEx, MIDI clock, sustain effects or bends are forwarded; explicit cleanup sends
+sustain-off, note-offs and channel all-notes/all-sound-off. Physical MIDI timing
+and FM1 audio quality require device testing. The browser tests use a simulated
+port while the real alphaTab synth runs, not a simulated transport.
+
+References checked: [alphaTab MIDI event stream](https://demos.alphatab.net/docs/features/play-sync/midi-event-stream),
+[Web MIDI API](https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API),
+and [official FM-1 product information](https://www.cuvave.com/product?id=fm-1).
+
+## Follow-up: standard score export and video-style hand view
+
+Both workspaces offer **Save Guitar Pro (.gp)** and **Save alphaTex**, implemented
+through alphaTab's native exporters on the current runtime Score. A creator's
+original source can also be saved as markdown. Export preserves the chosen base
+tempo and uniform durations, not the temporary slowdown setting. Draft rhythm is
+recorded in the score subtitle. GP4 is an input format; GP7+ `.gp` is the supported
+Guitar Pro output. Download tests re-import actual browser downloads and compare
+notes/chords and timing through the real alphaTab parser.
+
+The fretboard now has keyboard-accessible **Diagram** and **Video view** tabs.
+`fretboard-layout.js` defines one coordinate system for strings, frets, mirroring
+and hand targets. Video view reverses both axes: high E at the bottom, higher frets
+to the left and open strings on the right. Left-handed mode mirrors neck and hand
+together. Small screens pan to the active note when the pose changes, without
+repeatedly overriding manual scrolling while the same notes remain displayed.
+
+`hand-guide.js` draws an optional stylised SVG hand from below the neck. Active
+fingertips use the exact same positions as current note markers; index barres
+span the matching strings. Open strings/rests have relaxed, non-contact fingers.
+Unknown, contradictory or uncertain suggestions do not invent contact points.
+The hand appears with a short entrance transition (disabled with reduced motion)
+and changes pose at playback beats. It is a 2D illustration, not an anatomically
+calibrated rig or photorealistic/3D animation. The source finger hints and generated
+suggestions retain their previously described limitations.
+
+Validation of these follow-ups: 29 Node tests and 21 headless Edge browser tests
+passed, plus the production build. Browser coverage includes actual GP/alphaTex
+downloads and re-import, editor invalidation, USB MIDI note routing/50% loop timing
+against a simulated port, silent browser monitoring, video orientation and hand
+contact alignment on desktop/mobile. Physical FM1 sound and standalone sequencer
+compatibility are separate from the simulated-port checks.

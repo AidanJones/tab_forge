@@ -7,8 +7,11 @@ const MAX_FILE_BYTES = 50 * 1024 * 1024;
 
 // alphaTab owns musical state and the audio clock. The UI sees plain view data.
 export class PracticePlayer {
-  constructor(element, onChange) {
+  constructor(element, onChange, { onMidiEvents = () => {}, onSilence = () => {} } = {}) {
     this.onChange = onChange;
+    this.onSilence = onSilence;
+    this.volume = 65;
+    this.browserSound = true;
     this.disposed = false;
     this.request = 0;
     this.selectedTrack = 0;
@@ -33,6 +36,22 @@ export class PracticePlayer {
       },
     });
     this.api.masterVolume = 0.65;
+    this.api.midiEventsPlayedFilter = [alphaTab.midi.MidiEventType.NoteOn, alphaTab.midi.MidiEventType.NoteOff];
+    this.api.midiEventsPlayed.on(({ events }) => {
+      const track = this.api.score?.tracks[this.selectedTrack];
+      const soloed = this.api.score?.tracks.some(item => item.playbackInfo.isSolo);
+      if (!track || track.playbackInfo.isMute || (soloed && !track.playbackInfo.isSolo) || this.api.playerState !== alphaTab.synth.PlayerState.Playing) return;
+      const notes = events.filter(event => event.track === this.selectedTrack)
+        .map(event => ({
+          kind: event.type === alphaTab.midi.MidiEventType.NoteOn ? 'on' : 'off',
+          key: event.noteKey, velocity: event.noteVelocity, tick: event.tick,
+        })).sort((a, b) => a.tick - b.tick || Number(a.kind === 'on') - Number(b.kind === 'on'));
+      onMidiEvents(notes);
+    });
+    this.api.playerFinished.on(() => this.onSilence());
+    this.api.playerStateChanged.on(({ state }) => {
+      if (state !== alphaTab.synth.PlayerState.Playing) this.onSilence();
+    });
     for (const event of ['playerReady', 'renderFinished', 'playerStateChanged']) {
       this.api[event].on(() => this.emit());
     }
@@ -40,10 +59,12 @@ export class PracticePlayer {
     this.api.activeBeatsChanged.on(({ activeBeats }) => { this.activeBeats = activeBeats; this.emit(); });
     this.api.playerPositionChanged.on(position => {
       if (position.isSeek) this.activeBeats = [];
+      if (position.isSeek) this.onSilence();
       this.position = position;
       this.emit();
     });
     this.api.playbackRangeChanged.on(({ playbackRange }) => {
+      this.onSilence();
       if (this.snap === 'bar' && playbackRange) {
         const snapped = snapRangeToBars(playbackRange, this.bars);
         if (!sameRange(playbackRange, snapped)) {
@@ -81,7 +102,7 @@ export class PracticePlayer {
       range: this.api.playbackRange ? { ...this.api.playbackRange } : null,
       countIn: this.api.countInVolume > 0,
       metronome: this.api.metronomeVolume > 0,
-      volume: Math.round(this.api.masterVolume * 100),
+      volume: this.volume,
       selectedTrack: this.selectedTrack,
       fingering: this.fingeringView,
       tracks: (score?.tracks ?? []).map(track => ({
@@ -159,6 +180,7 @@ export class PracticePlayer {
 
   loadScore(score, source) {
     if (this.disposed) return;
+    this.onSilence();
     this.api.stop();
     this.api.playbackRange = null;
     this.api.isLooping = false;
@@ -205,20 +227,30 @@ export class PracticePlayer {
   playPause() {
     if (!this.snapshot.ready) return;
     this.error = '';
+    this.onSilence();
     if (this.snapshot.playing) this.api.pause();
     else if (!this.api.play()) throw new Error('Audio is not ready. Try Play again after loading finishes.');
     this.emit();
   }
 
-  stop() { this.activeBeats = []; this.api.stop(); this.emit(); }
+  stop() { this.onSilence(); this.activeBeats = []; this.api.stop(); this.emit(); }
   setSpeed(value) { this.api.playbackSpeed = speedPercent(value) / 100; this.emit(); }
   setLoop(value) { this.api.isLooping = value; this.emit(); }
   setCountIn(value) { this.api.countInVolume = value ? 0.7 : 0; this.emit(); }
   setMetronome(value) { this.api.metronomeVolume = value ? 0.6 : 0; this.emit(); }
-  setVolume(value) { this.api.masterVolume = Math.min(100, Math.max(0, Number(value))) / 100; this.emit(); }
+  setVolume(value) {
+    this.volume = Math.min(100, Math.max(0, Number(value)));
+    this.api.masterVolume = this.browserSound ? this.volume / 100 : 0;
+    this.emit();
+  }
+  setBrowserSound(enabled) {
+    this.browserSound = enabled;
+    this.api.masterVolume = enabled ? this.volume / 100 : 0;
+  }
 
   selectTrack(index) {
     if (!this.api.score?.tracks[index]) return;
+    this.onSilence();
     this.selectedTrack = index;
     this.activeBeats = [];
     this.api.renderTracks([this.api.score.tracks[index]]);
@@ -228,6 +260,7 @@ export class PracticePlayer {
   setTrackState(index, kind, value) {
     const track = this.api.score?.tracks[index];
     if (!track || !['mute', 'solo'].includes(kind)) return;
+    this.onSilence();
     if (kind === 'mute') {
       track.playbackInfo.isMute = value;
       this.api.changeTrackMute([track], value);
@@ -247,14 +280,23 @@ export class PracticePlayer {
   }
 
   selectBars(from, to) {
+    this.onSilence();
     this.api.playbackRange = rangeForBars(this.bars, from, to);
     this.emit();
   }
 
-  clearRange() { this.api.playbackRange = null; this.emit(); }
+  clearRange() { this.onSilence(); this.api.playbackRange = null; this.emit(); }
+
+  exportFile(format) {
+    if (!this.api.score || !this.snapshot.ready) throw new Error('Load or update a score before saving it.');
+    if (format === 'gp') return new alphaTab.exporter.Gp7Exporter().export(this.api.score, this.api.settings);
+    if (format === 'alphatex') return new alphaTab.exporter.AlphaTexExporter().exportToString(this.api.score, this.api.settings);
+    throw new Error('Choose Guitar Pro (.gp) or alphaTex.');
+  }
 
   dispose() {
     this.disposed = true;
+    this.onSilence();
     ++this.request;
     this.api.stop();
     this.api.destroy();
