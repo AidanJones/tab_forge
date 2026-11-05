@@ -174,6 +174,8 @@ export class PracticePlayer {
       track: track.name || `Track ${track.index + 1}`,
       tuning: [...staff.tuning], capo: staff.capo,
       mode: playing ? 'This beat' : 'Preview — click a beat or press Play',
+      playing,
+      handTransitionMs: Math.min(110, Math.max(25, (lookup?.duration ?? 300) / this.api.playbackSpeed * 0.18)),
       current: notesFor(currentBeats), next: notesFor(lookupBeats(nextLookup)),
     };
   }

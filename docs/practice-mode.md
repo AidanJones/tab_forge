@@ -380,14 +380,30 @@ to the left and open strings on the right. Left-handed mode mirrors neck and han
 together. Small screens pan to the active note when the pose changes, without
 repeatedly overriding manual scrolling while the same notes remain displayed.
 
-`hand-guide.js` draws an optional stylised SVG hand from below the neck. Active
-fingertips use the exact same positions as current note markers; index barres
-span the matching strings. Open strings/rests have relaxed, non-contact fingers.
-Unknown, contradictory or uncertain suggestions do not invent contact points.
-The hand appears with a short entrance transition (disabled with reduced motion)
-and changes pose at playback beats. It is a 2D illustration, not an anatomically
-calibrated rig or photorealistic/3D animation. The source finger hints and generated
-suggestions retain their previously described limitations.
+`hand-rig.js` solves three-joint fingers with fixed bone lengths in projected 3D
+coordinates. Pressed pads have zero clearance above the strings; unused fingers
+hover and anticipate reachable upcoming notes. A shared palm shift accommodates
+low-string reaches. `fretboard-scene.js` uses Three.js to render a shallow 3D neck,
+metal fret wires, strings, and tapered finger surfaces with nails. The camera
+shows fingers and the knuckle edge, cropping out the palm and wrist. The thumb
+only appears for written thumb-over hints. The opacity is adjustable and pad
+surfaces lower onto the string plane. Barres flatten one continuous finger along
+the strings. Active fingertips share
+the note markers' coordinates just behind the fret wires; index barres span the
+matching strings. Unknown, contradictory or uncertain suggestions do not invent
+contacts. Poses blend between playback beats unless reduced motion is enabled.
+Rendering runs only on pose changes, resizing and short transitions; geometries
+are disposed when replaced, and the WebGL renderer is disposed on page hide.
+`hand-guide.js` retains an SVG fallback for browsers without WebGL. This remains
+a simplified procedural rig, without full collision modelling or a captured
+performer's anatomy. Finger hints and suggestions retain their limits.
+
+Visual direction was informed by CDPR's discussion of video reference and hand
+detail in [Every Frame Tells a Story](https://www.cdprojektred.com/en/blog/176/every-frame-tells-a-story-game-animation-transcript-included).
+That article does not establish how the specific Cyberpunk guitar scenes were made.
+
+The 3D follow-up was checked with 31 Node tests, 23 Edge browser tests, production
+builds and screenshots of single notes, barre chords and mirrored mobile views.
 
 Validation of these follow-ups: 29 Node tests and 21 headless Edge browser tests
 passed, plus the production build. Browser coverage includes actual GP/alphaTex

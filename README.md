@@ -54,11 +54,16 @@ string numbering, multi-digit fret alignment and spaced `+` groups are supported
 
 In **Fretting-hand guide → Video view**, the neck faces you like a video lesson:
 high E is at the bottom, fret 12 is on the left and open strings are on the right.
-Enable **Show hand** for an illustrated hand whose numbered fingertips follow
-the current notes. Open strings/rests show released fingers. **Left-handed**
+The neck is rendered in shallow 3D. Enable **Show hand** for translucent 3D
+fingers and knuckles: pressing pads meet the
+strings, while unused fingers hover and prepare for upcoming notes. Adjust
+**Hand opacity** to see more of the neck. Poses blend during playback (respecting
+reduced motion). Open strings/rests release the fingers. **Left-handed**
 mirrors the neck and hand together. On small screens, the view pans to the active
 notes; you can also scroll along the neck. The normal **Diagram** tab remains
-available. This is an illustrative 2D pose guide, not a photorealistic hand.
+available. The camera crops out the palm and wrist; the thumb only appears for
+written thumb-over hints. This is a procedural pose guide rather than a captured
+performer. Browsers without WebGL use the illustrated fallback.
 
 Playback is synthesised from the score, with local alphaTab assets and SoundFont.
 The editor now includes the same player and finger guide as Practice. Click
@@ -319,3 +324,4 @@ The repository includes example scripts:
 ## License
 
 See LICENSE file for details.
+Browser dependency notices are included in `public/licenses`.

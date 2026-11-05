@@ -283,6 +283,10 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     });
   }
   const viewTabs = [...$('finger-guide').querySelectorAll('[role="tab"]')];
+  $('hand-opacity').addEventListener('input', event => {
+    fretboard.options.handOpacity = Number(event.target.value) / 100;
+    fretboard.update(latest?.fingering);
+  });
   function selectView(tab) {
     fretboard.options.mode = tab.dataset.view;
     fretboard.update(latest?.fingering);

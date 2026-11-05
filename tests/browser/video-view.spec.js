@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { importer, exporter, Settings } from '@coderline/alphatab';
 
 test('video view rotates the neck and places the optional hand on the active fret', async ({ page }) => {
   await page.goto('/index.html');
@@ -13,7 +14,16 @@ test('video view rotates the neck and places the optional hand on the active fre
   const frets = await page.locator('#fretboard-diagram .fret-number').evaluateAll(nodes => nodes.map(node => ({ text: node.textContent, x: Number(node.getAttribute('x')) })));
   expect(frets.find(fret => fret.text === '12').x).toBeLessThan(frets.find(fret => fret.text === '0').x);
   await page.locator('#show-hand').check();
+  await expect(page.locator('#fretboard-diagram')).toHaveAttribute('data-renderer', 'webgl');
+  await expect(page.locator('.fretboard-3d')).toBeVisible();
+  await expect(page.locator('.hand-palm')).toHaveCount(0);
   await expect(page.locator('.hand-overlay')).toHaveCount(1);
+  await expect(page.locator('.hand-overlay')).toHaveAttribute('opacity', '0.42');
+  await page.locator('#hand-opacity').fill('30');
+  await expect(page.locator('.hand-overlay')).toHaveAttribute('opacity', '0.3');
+  await expect(page.locator('.hand-finger[data-active=false]')).toHaveCount(3);
+  const clearances = await page.locator('.hand-finger[data-active=false]').evaluateAll(nodes => nodes.map(node => Number(node.dataset.clearance)));
+  expect(clearances.every(value => value > 0)).toBe(true);
   const finger = await page.locator('.current-note').getAttribute('data-finger');
   const contact = page.locator(`.hand-finger[data-finger="${finger}"]`);
   const marker = page.locator('.current-note circle');
@@ -23,10 +33,64 @@ test('video view rotates the neck and places the optional hand on the active fre
   await page.locator('#play').click();
   await expect(page.locator('.current-note')).toHaveAttribute('data-string', '2');
   await expect(page.locator('.hand-finger[data-active=true]')).toHaveCount(1);
+  await expect(page.locator('.hand-finger animate')).not.toHaveCount(0);
   await page.locator('#stop').click();
   await page.getByRole('tab', { name: 'Diagram', exact: true }).click();
   await expect(page.locator('.hand-overlay')).toHaveCount(0);
   await expect(page.locator('#hand-option')).toBeHidden();
+  await expect(page.locator('#hand-opacity-option')).toBeHidden();
+});
+
+test('3D barre chord has a compact camera crop and SVG fallback remains usable', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  const score = importer.ScoreLoader.loadAlphaTex(String.raw`\title "F barre" . :1 (1.1 1.2 2.3 3.4 3.5 1.6) |`, new Settings());
+  for (const note of score.tracks[0].staves[0].bars[0].voices[0].beats[0].notes) {
+    note.leftHandFinger = note.fret === 1 ? 1 : note.fret === 2 ? 2 : note.string === 3 ? 4 : 3;
+  }
+  await page.goto('/practice.html');
+  await page.locator('#file').setInputFiles({ name: 'barre.gp', mimeType: 'application/octet-stream', buffer: Buffer.from(new exporter.Gp7Exporter().export(score, new Settings())) });
+  await expect(page.locator('#play')).toBeEnabled();
+  await page.getByRole('tab', { name: 'Video view', exact: true }).click();
+  await page.locator('#show-hand').check();
+  await expect(page.locator('#fretboard-diagram')).toHaveAttribute('data-renderer', 'webgl');
+  await expect(page.locator('.hand-barre')).toHaveCount(1);
+  await expect(page.locator('.hand-finger[data-active=true]')).toHaveCount(4);
+  const bounds = await page.locator('.fretboard-3d').boundingBox();
+  expect(bounds.height / bounds.width).toBeLessThan(0.26);
+  await page.locator('#finger-guide').screenshot({ path: 'test-results/video-hand-barre.png' });
+  await page.locator('#left-handed').check();
+  await page.locator('#finger-guide').screenshot({ path: 'test-results/video-hand-barre-mirrored.png' });
+  expect(errors).toEqual([]);
+
+  await page.addInitScript(() => {
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function(type, ...args) {
+      return type.startsWith('webgl') ? null : getContext.call(this, type, ...args);
+    };
+  });
+  await page.reload();
+  await page.locator('#demo').click();
+  await expect(page.locator('#play')).toBeEnabled();
+  await page.getByRole('tab', { name: 'Video view', exact: true }).click();
+  await page.locator('#show-hand').check();
+  await expect(page.locator('#fretboard-diagram')).toHaveAttribute('data-renderer', 'svg');
+  await expect(page.locator('.hand-overlay')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('reduced motion changes hand poses without animation', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/index.html');
+  await page.locator('#input').fill('title: Quiet motion\n[Intro]\n1f1s 2f2s 3f3s 4f4s');
+  await page.getByRole('button', { name: 'Update preview', exact: true }).click();
+  await expect(page.locator('#play')).toBeEnabled();
+  await page.getByRole('tab', { name: 'Video view', exact: true }).click();
+  await page.locator('#show-hand').check();
+  await page.locator('#play').click();
+  await expect(page.locator('.current-note')).toHaveAttribute('data-string', '2');
+  await expect(page.locator('.hand-overlay animate')).toHaveCount(0);
+  await page.locator('#stop').click();
 });
 
 test('view tabs are keyboard accessible and the hand can be mirrored on mobile', async ({ page }) => {
