@@ -54,16 +54,20 @@ string numbering, multi-digit fret alignment and spaced `+` groups are supported
 
 In **Fretting-hand guide → Video view**, the neck faces you like a video lesson:
 high E is at the bottom, fret 12 is on the left and open strings are on the right.
-The neck is rendered in shallow 3D. Enable **Show hand** for translucent 3D
-fingers and knuckles: pressing pads meet the
-strings, while unused fingers hover and prepare for upcoming notes. Adjust
-**Hand opacity** to see more of the neck. Poses blend during playback (respecting
+The neck is rendered in shallow 3D. Enable **Show hand** for a translucent
+skeleton hand with cuboid finger bones and visible joint spheres. A shared palm
+and thumb grip the neck; joint limits and clearance checks guide the fingers.
+Common chord families reuse cached grips, and the whole hand moves along the
+neck during playback. Pressing pads meet the strings, while unused fingers hover.
+Adjust **Hand opacity** to see more of the neck. Poses blend during playback (respecting
 reduced motion). Open strings/rests release the fingers. **Left-handed**
 mirrors the neck and hand together. On small screens, the view pans to the active
 notes; you can also scroll along the neck. The normal **Diagram** tab remains
-available. The camera crops out the palm and wrist; the thumb only appears for
-written thumb-over hints. This is a procedural pose guide rather than a captured
-performer. Browsers without WebGL use the illustrated fallback.
+available. The camera crops out most of the palm and wrist; the supporting thumb
+sits behind the neck. Thumb-over notes remain marked, but their specialised grips
+are not animated yet. This is a simplified anatomical rig with fixed proportions,
+rather than a model measured for your own hand. Browsers without WebGL use the
+blocky illustrated fallback.
 
 Playback is synthesised from the score, with local alphaTab assets and SoundFont.
 The editor now includes the same player and finger guide as Practice. Click

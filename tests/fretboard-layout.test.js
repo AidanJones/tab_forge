@@ -41,7 +41,7 @@ test('finger bones retain their lengths across string reaches and mirrored grips
       const pose = handPose([{ string, fret: finger, finger }], layout, { start: 1, end: 12 });
       const pressed = pose.fingers[finger - 1];
       assert(pressed.active, `string ${string}, finger ${finger}`);
-      assert.equal(pressed.joints[3][2], 0);
+      assert(Math.abs(pressed.joints[3][2] - 7) < 1e-6);
       for (const part of pose.fingers) {
         assert(part.reachable);
         part.lengths.forEach((expected, i) => {
@@ -60,8 +60,8 @@ test('unused fingers prepare above the next string without claiming contact', ()
   const middle = pose.fingers[1];
   assert(middle.anticipating);
   assert.equal(middle.active, false);
-  assert.equal(middle.joints[3][0], layout.point(2, 2).x);
-  assert.equal(middle.joints[3][1], layout.point(2, 2).y);
+  assert(Math.abs(middle.joints[3][0] - layout.point(2, 2).x) < 1e-6);
+  assert(Math.abs(middle.joints[3][1] - layout.point(2, 2).y) < 1e-6);
   assert(middle.joints[3][2] > 0);
   assert.equal(pose.contacts.length, 1);
 });

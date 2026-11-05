@@ -1,18 +1,18 @@
 import * as THREE from 'three';
+import { BlockHand } from './block-hand.js';
+import { interpolateHandPose } from './hand-rig.js';
 
 // Oblique orthographic projection keeps fret/string contacts aligned with the
 // accessible SVG labels, while real geometry provides volume and occlusion.
-const vector = ([x, y, z]) => new THREE.Vector3(x, -y, z);
-const mixPose = (before, after, t) => after.fingers.map((finger, i) => ({
-  ...finger, joints: finger.joints.map((joint, j) => joint.map((n, axis) =>
-    before ? before.fingers[i].joints[j][axis] * (1 - t) + n * t : n)),
-}));
 
 function release(group) {
+  const geometries = new Set(), materials = new Set();
   group.traverse(object => {
-    object.geometry?.dispose();
-    if (object.material) for (const material of [object.material].flat()) material.dispose();
+    if (object.geometry) geometries.add(object.geometry);
+    if (object.material) for (const material of [object.material].flat()) materials.add(material);
   });
+  for (const geometry of geometries) geometry.dispose();
+  for (const material of materials) material.dispose();
   group.clear();
 }
 
@@ -71,55 +71,18 @@ export class FretboardScene {
     }
   }
 
-  handModel(fingers, pose, opacity) {
-    release(this.hand);
-    for (const finger of fingers) {
-      const radii = [finger.finger === 4 ? 9 : 11, finger.finger === 4 ? 8 : 10, 7.5, 6.3];
-      // Finger axes sit one pad radius above the contact target, so the lower
-      // surface, rather than the middle of a bone, touches the string.
-      let points = finger.joints.map((joint, i) => vector([joint[0], joint[1], joint[2] + radii[i]]));
-      if (finger.targets.length > 1) {
-        const ys = finger.targets.map(note => this.layout.y(note.string));
-        const x = finger.joints[3][0], min = Math.min(...ys), max = Math.max(...ys);
-        // Lay the side of a barre finger down as one continuous surface, rather
-        // than drawing an extra vertical finger on top of an arched index.
-        points = [points[0], vector([x, max + 16, 9]), vector([x, (min + max) / 2, 8]), vector([x, min, 6.3])];
-      }
-      const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal');
-      const geometry = new THREE.TubeGeometry(curve, 36, 1, 12, false);
-      const positions = geometry.attributes.position;
-      for (let ring = 0; ring <= 36; ++ring) {
-        const t = ring / 36, interval = Math.min(2, Math.floor(t * 3)), fraction = t * 3 - interval;
-        const radius = radii[interval] * (1 - fraction) + radii[interval + 1] * fraction;
-        const centre = curve.getPointAt(t);
-        // TubeGeometry uses getPointAt(), too: the same sampling is necessary
-        // to taper around its centre rather than accidentally warping the tube.
-        for (let side = 0; side <= 12; ++side) {
-          const index = ring * 13 + side;
-          const p = new THREE.Vector3().fromBufferAttribute(positions, index).sub(centre).multiplyScalar(radius).add(centre);
-          positions.setXYZ(index, p.x, p.y, p.z);
-        }
-      }
-      geometry.computeVertexNormals();
-      this.mesh(this.hand, geometry, '#d3bca6', { transparent: true, opacity, depthWrite: false });
-      // Only the fingertip needs a cap. Separate spheres at every joint create
-      // artificial ball joints when the translucent surfaces overlap.
-      const cap = this.mesh(this.hand, new THREE.SphereGeometry(radii[3], 16, 10), '#d3bca6', { transparent: true, opacity, depthWrite: false });
-      cap.position.copy(points[3]);
-      const nail = this.mesh(this.hand, new THREE.SphereGeometry(1, 16, 8), '#eee2d1', { transparent: true, opacity: opacity * 0.85, depthWrite: false, roughness: 0.35 });
-      nail.position.copy(points[3]).lerp(points[2], 0.2);
-      nail.position.z += 5;
-      nail.scale.set(4.7, 7, 1.3);
-      const distal = points[3].clone().sub(points[2]);
-      nail.rotation.z = Math.atan2(distal.y, distal.x) - Math.PI / 2;
+  handModel(pose, opacity) {
+    this.hand.visible = true;
+    if (!this.blockHand) {
+      this.blockHand = new BlockHand();
+      this.hand.add(this.blockHand.root);
     }
-    // The thumb is behind the neck by default; only an explicit thumb-over
-    // fingering brings a small tip into view. The wrist/palm stay out of frame.
-    if (pose.thumb) {
-      const thumb = this.mesh(this.hand, new THREE.SphereGeometry(10, 20, 12), '#d3bca6', { transparent: true, opacity, depthWrite: false });
-      thumb.position.copy(vector([pose.thumb.x, pose.thumb.y, 7]));
-      thumb.scale.set(0.85, 1.4, 0.75);
-    }
+    this.blockHand.update(pose, opacity);
+    this.renderer.domElement.dataset.handModel = "articulated";
+    this.renderer.domElement.dataset.grip = pose.preset;
+    this.renderer.domElement.dataset.fingerBones = "12";
+    this.renderer.domElement.dataset.joints = "20";
+    this.renderer.domElement.dataset.gripX = pose.palm.x.toFixed(2);
   }
 
   update(stage, layout, pose, { previous, duration = 0, opacity = 0.42 } = {}) {
@@ -138,8 +101,8 @@ export class FretboardScene {
     const frame = now => {
       const progress = duration ? Math.min(1, (now - start) / duration) : 1;
       const t = 1 - (1 - progress) ** 3;
-      if (pose) this.handModel(mixPose(previous, pose, t), pose, opacity);
-      else release(this.hand);
+      if (pose) this.handModel(interpolateHandPose(previous, pose, t), opacity);
+      else this.hand.visible = false;
       this.renderer.render(this.scene, this.camera);
       if (progress < 1) this.animation = requestAnimationFrame(frame);
     };

@@ -1,0 +1,92 @@
+import * as THREE from 'three';
+import { BONE_LENGTHS } from './hand-rig.js';
+
+const point = ([x, y, z]) => new THREE.Vector3(x, -y, z);
+const up = new THREE.Vector3(0, 1, 0);
+
+// Rigid meshes parented to real Bone nodes. No splines, independent fingertip
+// warping, or renderer-only chord corrections: the solver owns the skeleton.
+export class BlockHand {
+  constructor() {
+    this.root = new THREE.Group();
+    this.root.name = 'fretting-hand';
+    this.box = new THREE.BoxGeometry(1, 1, 1);
+    this.ball = new THREE.SphereGeometry(1, 12, 8);
+    this.boneMaterial = new THREE.MeshStandardMaterial({ color: '#d9c9a8', roughness: 0.8, transparent: true, depthWrite: false });
+    this.jointMaterial = new THREE.MeshStandardMaterial({ color: '#52786b', roughness: 0.65, transparent: true, depthWrite: false });
+    this.palm = this.boxMesh(this.root, [100, 48, 22]);
+    this.palm.name = 'palm';
+    // Tilt the palm in line with the metacarpals as it cups the lower edge.
+    // Its front face stays behind the wooden neck, rather than intersecting it.
+    this.palm.rotation.x = Math.PI / 3;
+    this.palm.position.z = -8;
+    this.wrist = this.boxMesh(this.root, [46, 32, 20]);
+    this.wrist.position.set(0, -30, -28);
+    this.wrist.rotation.x = Math.PI / 3;
+    this.fingers = [1,2,3,4].map(finger => ({
+      finger, chain: this.chain(`finger-${finger}`, BONE_LENGTHS[finger], finger === 4 ? 10 : 12),
+      metacarpal: this.boxMesh(this.root, [7,1,7]),
+    }));
+    this.thumb = this.chain('thumb', [45,38,30], 13);
+  }
+
+  boxMesh(parent, scale) {
+    const mesh = new THREE.Mesh(this.box, this.boneMaterial);
+    mesh.scale.set(...scale);
+    parent.add(mesh);
+    return mesh;
+  }
+
+  chain(name, lengths, width) {
+    const joints = [];
+    let parent = this.root;
+    for (let i = 0; i < 4; ++i) {
+      const joint = new THREE.Bone();
+      joint.name = `${name}-${(name === 'thumb' ? ['CMC','MCP','IP','tip'] : ['MCP','PIP','DIP','tip'])[i]}`;
+      parent.add(joint);
+      if (i) joint.position.y = lengths[i - 1];
+      const ball = new THREE.Mesh(this.ball, this.jointMaterial);
+      ball.scale.setScalar(i === 0 ? 7.5 : i === 3 ? 7 : 6);
+      joint.add(ball);
+      if (i < 3) {
+        const bone = this.boxMesh(joint, [width - i, lengths[i] - 12, width - 2]);
+        bone.position.y = lengths[i] / 2;
+      }
+      joints.push(joint);
+      parent = joint;
+    }
+    return joints;
+  }
+
+  updateChain(chain, joints, localPoint) {
+    const points = joints.map(localPoint);
+    chain[0].position.copy(points[0]);
+    let parentRotation = new THREE.Quaternion();
+    for (let i = 0; i < 3; ++i) {
+      const axis = points[i + 1].clone().sub(points[i]).normalize();
+      const rotation = new THREE.Quaternion().setFromUnitVectors(up, axis);
+      chain[i].quaternion.copy(parentRotation.clone().invert().multiply(rotation));
+      parentRotation = rotation;
+    }
+  }
+
+  update(pose, opacity) {
+    this.root.position.copy(point(pose.grip.origin));
+    this.root.rotation.z = -pose.grip.yaw;
+    const inverse = this.root.quaternion.clone().invert();
+    const localPoint = p => point(p).sub(this.root.position).applyQuaternion(inverse);
+    this.boneMaterial.opacity = opacity;
+    this.jointMaterial.opacity = Math.min(0.9, opacity + 0.18);
+    for (const finger of this.fingers) {
+      const data = pose.fingers[finger.finger - 1];
+      this.updateChain(finger.chain, data.joints, localPoint);
+      const a = localPoint(data.metacarpal), b = localPoint(data.joints[0]);
+      const axis = b.clone().sub(a);
+      finger.metacarpal.position.copy(a).add(b).multiplyScalar(0.5);
+      finger.metacarpal.scale.y = axis.length();
+      finger.metacarpal.quaternion.setFromUnitVectors(up, axis.normalize());
+    }
+    this.thumb[0].visible = Boolean(pose.thumbChain);
+    if (pose.thumbChain) this.updateChain(this.thumb, pose.thumbChain.joints, localPoint);
+  }
+}

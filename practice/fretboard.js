@@ -103,7 +103,7 @@ export class Fretboard {
       this.handFrame = frame;
       this.root.querySelector('#hand-status').textContent = pose.open
         ? 'Open strings — release the strings; the fingers hover above the neck, ready for the next notes.'
-        : pose.contacts.length ? 'Pressed fingertips meet the solid notes. The other fingers hover over the neck and prepare for the next beat; the thumb braces behind it.'
+        : pose.contacts.length ? `${pose.preset} — pressed fingertips meet the solid notes. The other fingers hover; the thumb supports the back of the neck.`
           : current.length ? 'No confident pose for this beat. Enable suggestions or check the written hints; the hand is shown relaxed.' : 'Rest — release the strings.';
     } else {
       this.previousHandPose = null;

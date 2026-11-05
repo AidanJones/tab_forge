@@ -380,23 +380,36 @@ to the left and open strings on the right. Left-handed mode mirrors neck and han
 together. Small screens pan to the active note when the pose changes, without
 repeatedly overriding manual scrolling while the same notes remain displayed.
 
-`hand-rig.js` solves three-joint fingers with fixed bone lengths in projected 3D
-coordinates. Pressed pads have zero clearance above the strings; unused fingers
-hover and anticipate reachable upcoming notes. A shared palm shift accommodates
-low-string reaches. `fretboard-scene.js` uses Three.js to render a shallow 3D neck,
-metal fret wires, strings, and tapered finger surfaces with nails. The camera
-shows fingers and the knuckle edge, cropping out the palm and wrist. The thumb
-only appears for written thumb-over hints. The opacity is adjustable and pad
-surfaces lower onto the string plane. Barres flatten one continuous finger along
-the strings. Active fingertips share
-the note markers' coordinates just behind the fret wires; index barres span the
-matching strings. Unknown, contradictory or uncertain suggestions do not invent
-contacts. Poses blend between playback beats unless reduced motion is enabled.
-Rendering runs only on pose changes, resizing and short transitions; geometries
-are disposed when replaced, and the WebGL renderer is disposed on page hide.
-`hand-guide.js` retains an SVG fallback for browsers without WebGL. This remains
-a simplified procedural rig, without full collision modelling or a captured
-performer's anatomy. Finger hints and suggestions retain their limits.
+`hand-rig.js` now owns the full palm-local skeleton. Each long finger has three
+fixed-length phalanges, MCP flexion/abduction, and PIP/DIP hinges. The thumb has
+an opposed three-link chain behind the neck. Metacarpals connect every finger
+root to a common palm frame. The solver searches palm placement/orientation and
+bounded joint angles, checking expanded neck bounds and finger separation.
+Unsupported stretches release fingers instead of lengthening their bones.
+E/minor/A barre, C, E, A-minor and D grip templates seed the search; normalised
+grips and chain solutions are cached and reused when transposed up the neck.
+Barres constrain the relevant finger segments to lie flat at the string plane.
+
+`block-hand.js` attaches cuboid bone meshes and joint spheres to real Three.js
+Bone hierarchies. The renderer uses the exact solved joints, including during
+transitions; it no longer reshapes fingers independently. Slides interpolate a
+shared palm frame and joint angles, with angular corrections to clear the neck
+and neighbouring fingers. Rendering is on demand. Meshes are reused across
+poses and the renderer is disposed on page hide. `hand-guide.js` provides a
+matching blocky SVG fallback. Reduced motion skips pose interpolation.
+
+The camera retains the tight fingers/knuckles framing, with palm and thumb
+geometry continuing behind/below the neck. This is an anatomical layout with
+approximate joint ranges and fixed proportions, not a personalised or validated
+biomechanical model. Collision checks approximate bones as thick segments and
+the neck as a box; skin, tendons, fret-wire contact and individual hand sizes are
+not simulated. Thumb-over markers are preserved, but those grips remain
+unsupported by the animated skeleton. Basic rigid-chain modelling was informed
+by [Nataraj and Li's hand kinematics study](https://pmc.ncbi.nlm.nih.gov/articles/PMC3708711/).
+
+The articulated version passes 36 Node tests and 24 browser scenarios, including
+rendered-versus-solved joint positions, all preset-family transitions, transposed
+barres and a playing chord moving to a higher fret position.
 
 Visual direction was informed by CDPR's discussion of video reference and hand
 detail in [Every Frame Tells a Story](https://www.cdprojektred.com/en/blog/176/every-frame-tells-a-story-game-animation-transcript-included).

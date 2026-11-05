@@ -16,6 +16,8 @@ test('video view rotates the neck and places the optional hand on the active fre
   await page.locator('#show-hand').check();
   await expect(page.locator('#fretboard-diagram')).toHaveAttribute('data-renderer', 'webgl');
   await expect(page.locator('.fretboard-3d')).toBeVisible();
+  await expect(page.locator('.fretboard-3d')).toHaveAttribute('data-hand-model', 'articulated');
+  await expect(page.locator('.fretboard-3d')).toHaveAttribute('data-finger-bones', '12');
   await expect(page.locator('.hand-palm')).toHaveCount(0);
   await expect(page.locator('.hand-overlay')).toHaveCount(1);
   await expect(page.locator('.hand-overlay')).toHaveAttribute('opacity', '0.42');
@@ -56,6 +58,7 @@ test('3D barre chord has a compact camera crop and SVG fallback remains usable',
   await expect(page.locator('#fretboard-diagram')).toHaveAttribute('data-renderer', 'webgl');
   await expect(page.locator('.hand-barre')).toHaveCount(1);
   await expect(page.locator('.hand-finger[data-active=true]')).toHaveCount(4);
+  await expect(page.locator('.fretboard-3d')).toHaveAttribute('data-grip', 'E-shape barre');
   const bounds = await page.locator('.fretboard-3d').boundingBox();
   expect(bounds.height / bounds.width).toBeLessThan(0.26);
   await page.locator('#finger-guide').screenshot({ path: 'test-results/video-hand-barre.png' });
@@ -90,6 +93,29 @@ test('reduced motion changes hand poses without animation', async ({ page }) => 
   await page.locator('#play').click();
   await expect(page.locator('.current-note')).toHaveAttribute('data-string', '2');
   await expect(page.locator('.hand-overlay animate')).toHaveCount(0);
+  await page.locator('#stop').click();
+});
+
+test('the articulated chord grip slides together to a higher position during playback', async ({ page }) => {
+  const score=importer.ScoreLoader.loadAlphaTex(String.raw`\title "Moving grip" \tempo 60 . :2 (1.1 1.2 2.3 3.4 3.5 1.6) (5.1 5.2 6.3 7.4 7.5 5.6) |`,new Settings());
+  const beats=score.tracks[0].staves[0].bars[0].voices[0].beats;
+  for(const beat of beats) for(const note of beat.notes) {
+    const fret=note.fret-(beat===beats[0]?0:4);
+    note.leftHandFinger=fret===1?1:fret===2?2:note.string===3?4:3;
+  }
+  await page.goto('/practice.html');
+  await page.locator('#file').setInputFiles({name:'moving.gp',mimeType:'application/octet-stream',buffer:Buffer.from(new exporter.Gp7Exporter().export(score,new Settings()))});
+  await expect(page.locator('#play')).toBeEnabled();
+  await page.getByRole('tab',{name:'Video view',exact:true}).click();
+  await page.locator('#show-hand').check();
+  const canvas=page.locator('.fretboard-3d');
+  const start=Number(await canvas.getAttribute('data-grip-x'));
+  await page.locator('#play').click();
+  await expect(page.locator('.current-note').first()).toHaveAttribute('data-fret','5');
+  await expect.poll(async()=>Math.abs(Number(await canvas.getAttribute('data-grip-x'))-(start-4*770/12))).toBeLessThan(0.02);
+  await expect(canvas).toHaveAttribute('data-grip','E-shape barre');
+  await expect(page.locator('.hand-finger[data-active=true]')).toHaveCount(4);
+  await page.locator('#finger-guide').screenshot({path:'test-results/video-hand-slide.png'});
   await page.locator('#stop').click();
 });
 
