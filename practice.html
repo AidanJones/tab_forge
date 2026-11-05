@@ -36,7 +36,7 @@
         <div><p class="eyebrow" id="source-label">Your practice space</p><h2 id="score-title">Choose a score to begin</h2><p id="score-artist"></p></div>
         <div class="score-actions">
           <p class="status" id="status" role="status" aria-live="polite">Open a file or try the original demo exercise.</p>
-          <div><button id="save-gp" disabled>Save Guitar Pro (.gp)</button> <button id="save-alphatex" disabled>Save alphaTex</button></div>
+          <div><button id="save-gp" disabled>Save Guitar Pro (.gp)</button> <button id="save-alphatex" disabled>Save alphaTex</button> <button id="save-midi" disabled>Save MIDI (.mid)</button></div>
         </div>
       </div>
       <p id="error" class="error" role="alert" hidden></p>
@@ -95,6 +95,7 @@
         </div>
         <p id="midi-status" role="status" aria-live="polite">Connect your FM1 by USB, then connect MIDI and choose its output.</p>
         <p class="midi-help">Sends the displayed track on the chosen channel. Select a sound on the FM1; patches and MIDI clock are left unchanged. Pitch-bend effects are not sent.</p>
+        <p class="midi-help">Stock FM1: this is live playback, not a sequencer upload. Save MIDI exports a standard song file for compatible software; stock FM1 song-file import is not verified.</p>
       </details>
       <section id="finger-guide" class="finger-guide" aria-labelledby="finger-title">
         <div class="fretboard-tabs" role="tablist" aria-label="Fretboard view">

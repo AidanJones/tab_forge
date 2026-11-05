@@ -395,3 +395,20 @@ downloads and re-import, editor invalidation, USB MIDI note routing/50% loop tim
 against a simulated port, silent browser monitoring, video orientation and hand
 contact alignment on desktop/mobile. Physical FM1 sound and standalone sequencer
 compatibility are separate from the simulated-port checks.
+
+## Stock FM1 song export investigation
+
+The user confirmed stock M-VAVE firmware. The official MIDI control document
+lists performance messages, MIDI transport/clock and DX7 single-parameter SysEx;
+the published V16 release notes describe a 64-step/16-Pattern sequencer and
+8×8 arrangement. V16's bank SysEx export explicitly excludes Patterns and
+arrangements. Neither source documents Standard MIDI File import or a whole-song
+sequencer upload protocol. The control document also contains older FX mappings
+that V16's newer release notes supersede; do not treat the stock versions as
+interchangeable. No proprietary sequence-memory writes are implemented.
+
+Added **Save MIDI (.mid)** using alphaTab's MIDI generator/export handler and SMF
+type 0 output. It is a standard song file for compatible tools, explicitly not a
+stock FM1 project. Live USB MIDI remains the supported stock-device path, with
+the browser acting as the sequencer. The downloaded file is checked for a valid
+SMF header/track and the chosen base tempo. Source references are linked in README.

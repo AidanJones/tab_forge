@@ -129,7 +129,7 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     $('error').textContent = error;
     $('error').hidden = !error;
 
-    for (const id of ['play', 'stop', 'speed', 'loop', 'count-in', 'metronome', 'volume', 'track', 'save-gp', 'save-alphatex']) {
+    for (const id of ['play', 'stop', 'speed', 'loop', 'count-in', 'metronome', 'volume', 'track', 'save-gp', 'save-alphatex', 'save-midi']) {
       $(id).disabled = !state.ready;
     }
     for (const id of ['from-bar', 'to-bar', 'select-bars', 'clear-range']) {
@@ -264,7 +264,7 @@ export function mountPractice(root = document, { embedded = false } = {}) {
   }));
 
   $('play').addEventListener('click', () => run(() => player.playPause()));
-  for (const [id, format, type] of [['save-gp', 'gp', 'application/octet-stream'], ['save-alphatex', 'alphatex', 'text/plain;charset=utf-8']]) {
+  for (const [id, format, type] of [['save-gp', 'gp', 'application/octet-stream'], ['save-alphatex', 'alphatex', 'text/plain;charset=utf-8'], ['save-midi', 'mid', 'audio/midi']]) {
     $(id).addEventListener('click', () => run(() => {
       download(player.exportFile(format), scoreFilename(latest.title, format), type);
     }));

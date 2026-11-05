@@ -85,6 +85,24 @@ GP and alphaTex downloads can be opened in Practice via the file picker or by
 placing them in `public/scores/` and refreshing the library. The same export
 buttons also work on scores opened directly in Practice.
 
+**Save MIDI (.mid)** exports a Standard MIDI File (type 0) containing the song's
+notes and timing, for compatible DAWs or sequencers. This file is not a stock
+FM1 project. Live USB MIDI playback does not store the song in the FM1.
+
+### Stock FM1 standalone sequencer status
+
+No supported whole-song/Pattern upload interface was found in the official
+stock MIDI control document and V16 release notes checked on 5 November 2026.
+V16 supports 64 steps per Pattern, 16 Patterns and an eight-track/eight-column
+arrangement; the older V15 sequencer differs. V16's documented SysEx bank export
+explicitly excludes Patterns and arrangements. This does not prove an undocumented
+protocol cannot exist, but tab_forge does not claim a sequencer upload feature.
+Use live USB MIDI playback or the standard `.mid` download for compatible tools.
+No firmware changes or device-memory writes are performed.
+
+Sources: [official stock MIDI control document](https://yms-file-store.oss-cn-hongkong.aliyuncs.com/software/releaseNote/firmware/FM-1%20MIDI%20EN.docx)
+and [official firmware release notes](https://yms-file-store.oss-cn-hongkong.aliyuncs.com/software/releaseNote/firmware/FM-1.txt).
+
 ### USB MIDI output (including M-VAVE FM1)
 
 In either player, open **USB MIDI · play on your FM1**:

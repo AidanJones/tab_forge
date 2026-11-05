@@ -291,7 +291,14 @@ export class PracticePlayer {
     if (!this.api.score || !this.snapshot.ready) throw new Error('Load or update a score before saving it.');
     if (format === 'gp') return new alphaTab.exporter.Gp7Exporter().export(this.api.score, this.api.settings);
     if (format === 'alphatex') return new alphaTab.exporter.AlphaTexExporter().exportToString(this.api.score, this.api.settings);
-    throw new Error('Choose Guitar Pro (.gp) or alphaTex.');
+    if (format === 'mid') {
+      const file = new alphaTab.midi.MidiFile();
+      file.format = alphaTab.midi.MidiFileFormat.SingleTrackMultiChannel;
+      const handler = new alphaTab.midi.AlphaSynthMidiFileHandler(file, true);
+      new alphaTab.midi.MidiFileGenerator(this.api.score, this.api.settings, handler).generate();
+      return file.toBinary();
+    }
+    throw new Error('Choose Guitar Pro (.gp), MIDI (.mid) or alphaTex.');
   }
 
   dispose() {

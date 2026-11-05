@@ -42,7 +42,7 @@ test('invalid editor notes stop playback and cannot play stale content', async (
   await expect(page.locator('#editor-player')).toHaveAttribute('inert', '');
 });
 
-test('creator saves playable Guitar Pro, alphaTex and original lesson notes', async ({ page }) => {
+test('creator saves playable Guitar Pro, alphaTex, MIDI and original lesson notes', async ({ page }) => {
   await page.goto('/index.html');
   const source = 'title: Exported riff\n[Intro]\n3f1s 0s6 2f5s + 2f4s\nnote: play gently';
   await page.locator('#input').fill(source);
@@ -61,6 +61,17 @@ test('creator saves playable Guitar Pro, alphaTex and original lesson notes', as
   const tex = await texDownload;
   expect(tex.suggestedFilename()).toBe('Exported riff.alphatex');
   expect(importer.ScoreLoader.loadAlphaTex(await readFile(await tex.path(), 'utf8'), new Settings()).title).toBe('Exported riff');
+  const midiDownload = page.waitForEvent('download');
+  await page.locator('#save-midi').click();
+  const midi = await midiDownload;
+  expect(midi.suggestedFilename()).toBe('Exported riff.mid');
+  const binary = await readFile(await midi.path());
+  expect(binary.subarray(0, 4).toString()).toBe('MThd');
+  expect(binary.readUInt32BE(4)).toBe(6);
+  expect(binary.readUInt16BE(8)).toBe(0);
+  expect(binary.readUInt16BE(10)).toBe(1);
+  expect(binary.subarray(14, 18).toString()).toBe('MTrk');
+  expect(binary.includes(Buffer.from([0xff, 0x51, 0x03, 0x0b, 0x71, 0xb0]))).toBe(true); // 80 BPM.
   const notesDownload = page.waitForEvent('download');
   await page.locator('#save-notes').click();
   const notes = await notesDownload;
