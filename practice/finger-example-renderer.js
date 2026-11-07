@@ -1,13 +1,13 @@
 import { Environment, RenderEngineFactory, model } from '@coderline/alphatab';
 import { chordFingerExample, decodeFingerExample } from './finger-examples.js';
 import { projectHandPoint } from './hand-rig.js';
-import { BONE_PALETTE, cartoonBonePaths } from './cartoon-bones.js';
+import { FINGER_COLORS, fingerBoneStyle, cartoonBonePaths } from './cartoon-bones.js';
 
 export const FINGER_EXAMPLE_ENGINE='tab-forge-finger-examples';
 const HEIGHT=145, GAP=12;
 const widthFor=data=>2*(data.strings.length-1)*GAP+60;
 const cache=new Map();
-const color=hex=>model.Color.fromJson(hex);
+const color=(hex,opacity=1)=>model.Color.fromJson(hex+(opacity<1?Math.round(opacity*255).toString(16).padStart(2,'0'):''));
 
 function clipSegment(a,b,box) {
   let low=0,high=1;
@@ -21,7 +21,7 @@ function clipSegment(a,b,box) {
   return [{x:a.x+dx*low,y:a.y+dy*low},{x:a.x+dx*high,y:a.y+dy*high}];
 }
 
-function bone(canvas,a,b,width) {
+function bone(canvas,a,b,width,style) {
   const paths=cartoonBonePaths(a,b,width);
   function path(commands) {
     canvas.beginPath();
@@ -34,11 +34,11 @@ function bone(canvas,a,b,width) {
     }
   }
   canvas.beginGroup('cartoon-bone');
-  path(paths.outline);canvas.color=color(BONE_PALETTE.bone);canvas.fill();
+  path(paths.outline);canvas.color=color(style.bone,style.opacity);canvas.fill();
   // alphaTab's SVG canvas consumes a path on fill; replay it for the ink outline.
-  path(paths.outline);canvas.lineWidth=1.05;canvas.color=color(BONE_PALETTE.outline);canvas.stroke();
-  path(paths.shadow);canvas.color=color(BONE_PALETTE.shadow);canvas.fill();
-  path(paths.highlight);canvas.color=color(BONE_PALETTE.highlight);canvas.lineWidth=0.6;canvas.stroke();
+  path(paths.outline);canvas.lineWidth=1.05;canvas.color=color(style.outline,style.opacity);canvas.stroke();
+  path(paths.shadow);canvas.color=color(style.shadow,style.opacity);canvas.fill();
+  path(paths.highlight);canvas.color=color(style.highlight,style.opacity);canvas.lineWidth=0.6;canvas.stroke();
   canvas.endGroup();
 }
 
@@ -80,21 +80,24 @@ export function paintFingerExample(canvas,data,x,y) {
   // left, nut at top. This affine projection preserves every contact point.
   const project=p=>({x:rx+(p.y-54)/layout.gap*GAP,y:top+(layout.x(105)-p.x)/layout.cell*GAP+(0.5-0.72)*GAP});
   if(data.available && example.available) {
-    const box={left:rx-7,right:rx+gridWidth+28,top:top-5,bottom:top+5*GAP+18};
+    const box={left:rx-7,right:rx+gridWidth+5,top:top-5,bottom:top+5*GAP+18};
     canvas.beginGroup('finger-example-skeleton');canvas.lineWidth=0.8;
     for(const finger of pose.fingers) {
+      const style=fingerBoneStyle(finger.finger,finger.active);
+      canvas.beginGroup(`finger-example-finger finger-${finger.finger} ${finger.active?'finger-pressing':'finger-hovering'}`);
       const points=finger.points.map(project);
       const metacarpal=clipSegment(project(projectHandPoint(finger.metacarpal)),points[0],box);
-      if(metacarpal)bone(canvas,...metacarpal,3);
+      if(metacarpal)bone(canvas,...metacarpal,3,style);
       for(let i=0;i<3;++i) {
         const segment=clipSegment(points[i],points[i+1],box);
-        if(segment)bone(canvas,...segment,5.3-i*0.5);
+        if(segment)bone(canvas,...segment,5.3-i*0.5,style);
       }
       for(const p of points) if(p.x>=box.left&&p.x<=box.right&&p.y>=box.top&&p.y<=box.bottom) {
-        canvas.color=color(BONE_PALETTE.joint);canvas.fillCircle(p.x,p.y,2.6);
-        canvas.color=color(BONE_PALETTE.outline);canvas.lineWidth=0.9;canvas.strokeCircle(p.x,p.y,2.6);
-        canvas.beginPath();canvas.moveTo(p.x-1.5,p.y+0.7);canvas.quadraticCurveTo(p.x,p.y+1.5,p.x+1.5,p.y+0.7);canvas.color=color(BONE_PALETTE.shadow);canvas.stroke();
+        canvas.color=color(style.joint,style.opacity);canvas.fillCircle(p.x,p.y,2.6);
+        canvas.color=color(style.outline,style.opacity);canvas.lineWidth=0.9;canvas.strokeCircle(p.x,p.y,2.6);
+        canvas.beginPath();canvas.moveTo(p.x-1.5,p.y+0.7);canvas.quadraticCurveTo(p.x,p.y+1.5,p.x+1.5,p.y+0.7);canvas.color=color(style.shadow,style.opacity);canvas.stroke();
       }
+      canvas.endGroup();
     }
     canvas.endGroup();
   }
@@ -104,8 +107,8 @@ export function paintFingerExample(canvas,data,x,y) {
     const dx=(data.strings.length-index-1)*GAP,dy=(fret-firstFret+0.5)*GAP;
     canvas.color=color('#334f43');canvas.fillCircle(lx+dx,top+dy,2.8);
     canvas.color=color('#ffffff');canvas.fillCircle(rx+dx,top+dy,4.8);
-    canvas.color=color('#334f43');canvas.lineWidth=0.8;canvas.strokeCircle(rx+dx,top+dy,4.8);
     const finger=data.assignments[index];
+    canvas.color=color(FINGER_COLORS[finger]??'#334f43');canvas.lineWidth=0.8;canvas.strokeCircle(rx+dx,top+dy,4.8);
     canvas.fillText(finger===null?'?':finger===0?'T':String(finger),rx+dx,top+dy-4);
   });
   canvas.color=color('#65745d');canvas.font=new model.Font('Arial',8);

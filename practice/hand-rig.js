@@ -26,6 +26,7 @@ export const GRIP_PRESETS = [
   { name: 'E shape', shape: [[5,1,2],[4,1,3],[3,0,1]], forward: 8 },
   { name: 'A minor shape', shape: [[4,1,2],[3,1,3],[2,0,1]], forward: 0 },
   { name: 'D shape', shape: [[3,0,1],[2,1,3],[1,0,2]], forward: 0 },
+  { name: 'G/B shape', shape: [[5,0,1],[2,1,3],[1,1,4]], forward: 0 },
 ];
 const signature = notes => notes.map(n => `${n.string}:${n.fret}:${n.finger}`).sort().join('|');
 const presetSignature = preset => signature(preset.shape.map(([string, fret, finger]) => ({ string, fret, finger })));

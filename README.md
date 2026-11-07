@@ -106,8 +106,10 @@ individual strings instead of strumming. Both display preferences are remembered
 across the editor and Practice pages.
 
 With **Shape hints above bars** enabled, turn on **Finger examples** to add a
-cartoon skeleton-hand diagram beside each plain chord diagram. Ivory, knobby
-bone ends, slim shafts, warm shading and dark outlines keep the examples readable.
+cartoon skeleton-hand diagram beside each plain chord diagram. Knobby bone ends,
+slim shafts, shading and dark outlines keep the examples readable. Each finger
+uses its guide colour: amber index, blue middle, purple ring and pink little.
+Resting fingers are more translucent, and examples crop close to the fretboard.
 These use the
 same fixed-bone hand solver as Video view, rotated into a normal chord chart.
 Numbers label the fretting fingers; the caption says **One possible fingering**

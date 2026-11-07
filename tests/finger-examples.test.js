@@ -6,6 +6,14 @@ import { scoreForExport } from '../practice/chord-hints.js';
 import { fingerExampleCanvas } from '../practice/finger-example-renderer.js';
 const C={strings:[0,1,0,2,3,-1]};
 
+test('G/B uses a safe index, ring and little-finger grip',()=>{
+  const example=chordFingerExample({strings:[3,3,0,0,2,-1]});
+  assert(example.available);
+  assert.deepEqual(example.variant.assignments,[4,3,null,null,1,null]);
+  assert.equal(example.pose.fingers[1].active,false);
+  assert.equal(example.pose.contacts.length,3);
+});
+
 test('the same chord supports different finger-assignment variants without changing pitches',()=>{
   const first=chordFingerExample(C);
   const alternate=chordFingerExample(C,{variantId:'alternate',assignments:[null,2,null,3,4,null]});

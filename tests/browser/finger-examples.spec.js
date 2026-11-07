@@ -15,7 +15,7 @@ test('inline cartoon skeleton diagrams use the hand rig and survive printing wit
   await page.locator('#score-viewport').scrollIntoViewIfNeeded();
   await expect(page.locator('#score .finger-example-diagram').first()).toBeVisible();
   await expect(page.locator('#score .finger-example-skeleton')).toHaveCount(2);
-  await expect(page.locator('#score .cartoon-bone path[stroke="#382c23" i]').first()).toBeVisible();
+  await expect(page.locator('#score .cartoon-bone path[stroke]').first()).toBeVisible();
   await expect(page.locator('#score')).toContainText('One possible fingering');
   await expect(page.locator('#score')).toContainText('Let it ring');
   await expect(page.locator('#score')).not.toContainText('__TAB_FORGE');
@@ -77,4 +77,35 @@ test('written alternative fingerings produce different examples for the same cho
   await expect(diagrams.nth(1)).toContainText('Written fingering');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await page.locator('#score-viewport').screenshot({path:'test-results/finger-example-mobile.png'});
+});
+
+test('G/B has coloured pressing fingers, faded resting fingers and a tight right crop',async({page})=>{
+  await page.goto('/index.html');
+  await page.locator('#input').fill('title: G/B fingers\n[Verse - G/B]\n2f5s 0s4 3f2s 3f1s');
+  await page.getByRole('button',{name:'Update preview',exact:true}).click();
+  await expect(page.locator('#play')).toBeEnabled();
+  await page.locator('#score-shapes').check();
+  await page.locator('#score-finger-examples').check();
+  await page.locator('#score-viewport').scrollIntoViewIfNeeded();
+  const diagram=page.locator('#score .finger-example-diagram');
+  await expect(diagram).toHaveCount(1);
+  await expect(diagram.locator('.finger-example-skeleton')).toHaveCount(1);
+  await expect(diagram).not.toContainText('Check fingering');
+  await expect(diagram.locator('.finger-2')).toHaveClass(/finger-hovering/);
+  await expect(diagram.locator('.finger-1')).toHaveClass(/finger-pressing/);
+  const fills=await diagram.locator('.finger-example-finger').evaluateAll(groups=>groups.map(group=>{
+    const path=group.querySelector('.cartoon-bone path');
+    return path?getComputedStyle(path).fill:null;
+  }));
+  expect(fills.every(Boolean)).toBe(true);
+  expect(new Set(fills).size).toBe(4);
+  const alpha=await diagram.locator('.finger-2 .cartoon-bone path').first().evaluate(path=>{
+    const channels=getComputedStyle(path).fill.match(/[\d.]+/g).map(Number);
+    return channels.length===4?channels[3]:1;
+  });
+  expect(alpha).toBeLessThan(0.3);
+  const bounds=await diagram.locator('.finger-example-skeleton').boundingBox();
+  const lastContact=await diagram.locator('text').filter({hasText:/^4$/}).boundingBox();
+  expect(bounds.x+bounds.width-lastContact.x).toBeLessThan(18);
+  await page.locator('#score-viewport').screenshot({path:'test-results/coloured-gb-fingers.png'});
 });

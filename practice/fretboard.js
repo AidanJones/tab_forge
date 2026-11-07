@@ -2,9 +2,10 @@ import { FINGER_NAMES, fretWindow, noteName } from './fingering.js';
 import { fretboardLayout, handPose } from './fretboard-layout.js';
 import { drawHand } from './hand-guide.js';
 import { FretboardScene } from './fretboard-scene.js';
+import { FINGER_COLORS } from './cartoon-bones.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
-const COLORS = { 0: '#536254', 1: '#b16920', 2: '#276da3', 3: '#7853a2', 4: '#ac4668', open: '#397752', unknown: '#6e756e' };
+const COLORS = { ...FINGER_COLORS, open: '#397752', unknown: '#6e756e' };
 function element(tag, attributes = {}, text) {
   const node = document.createElementNS(SVG, tag);
   for (const [name, value] of Object.entries(attributes)) node.setAttribute(name, value);

@@ -507,3 +507,11 @@ bone paths between the diagrams and SVG hand fallback. It supplies original
 code-drawn silhouettes with shadows and highlights, informed by the user's
 cartoon reference. The 3D hand now uses rounded lathed bone meshes on the same
 joint axes instead of cuboids; skeletal constraints and endpoints stay unchanged.
+
+Finger colours are now shared with the guide's numbered markers. The projected
+diagrams, SVG fallback and 3D hand use separate per-finger colouring and fade idle
+fingers to 22% of the pressing-finger opacity. Inline examples crop close to the
+right fretboard edge. A normalised G/B grip for `x20033` uses index/ring/little
+fingers, fixing an unsuitable generic assignment that previously suppressed the
+example. Its three contacts, neck clearance and transitions are covered by the
+same rig checks as other preset grips.
