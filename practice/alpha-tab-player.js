@@ -22,7 +22,7 @@ export class PracticePlayer {
     this.source = '';
     this.fingerPlan = new WeakMap();
     this.activeBeats = [];
-    this.scoreDisplay = { chordDiagrams: true, shapeHints: false };
+    this.scoreDisplay = { chordDiagrams: true, shapeHints: false, notation: 'both' };
     this.suggestedShapes = 0;
     this.position = { currentTime: 0, endTime: 0, currentTick: 0, endTick: 0 };
     this.api = new alphaTab.AlphaTabApi(element, {
@@ -202,6 +202,14 @@ export class PracticePlayer {
   }
 
   applyScoreDisplay(score) {
+    for (const track of score.tracks) for (const staff of track.staves) {
+      const canShowTab = staff.tuning.length > 0 && !staff.isPercussion;
+      staff.showTablature = canShowTab && this.scoreDisplay.notation !== 'sheet';
+      // A piano/drum/MusicXML staff without string data must stay readable.
+      staff.showStandardNotation = !canShowTab || this.scoreDisplay.notation !== 'tab';
+      staff.showSlash = false;
+      staff.showNumbered = false;
+    }
     removeSuggestedShapes(score);
     this.suggestedShapes = this.scoreDisplay.shapeHints ? addSuggestedShapes(score) : 0;
     score.stylesheet.globalDisplayChordDiagramsOnTop = this.scoreDisplay.chordDiagrams;

@@ -18,17 +18,19 @@ export function mountPractice(root = document, { embedded = false } = {}) {
   let libraryRequest = 0;
   let sourceRequest = 0;
   let midiKey = '';
-  let scoreDisplay = { chordDiagrams: true, shapeHints: false };
+  let scoreDisplay = { chordDiagrams: true, shapeHints: false, notation: 'both' };
   try {
     const saved = JSON.parse(localStorage.getItem('tab-forge:score-display'));
     if (typeof saved?.chordDiagrams === 'boolean') scoreDisplay.chordDiagrams = saved.chordDiagrams;
     if (typeof saved?.shapeHints === 'boolean') scoreDisplay.shapeHints = saved.shapeHints;
+    if (['tab','sheet','both'].includes(saved?.notation)) scoreDisplay.notation = saved.notation;
   } catch { /* Preferences are optional when browser storage is unavailable. */ }
   $('score-chords').checked = scoreDisplay.chordDiagrams;
   $('score-shapes').checked = scoreDisplay.shapeHints;
-  for (const [id,key] of [['score-chords','chordDiagrams'],['score-shapes','shapeHints']]) {
+  $('score-notation').value = scoreDisplay.notation;
+  for (const [id,key] of [['score-chords','chordDiagrams'],['score-shapes','shapeHints'],['score-notation','notation']]) {
     $(id).addEventListener('change', () => {
-      scoreDisplay[key] = $(id).checked;
+      scoreDisplay[key] = id === 'score-notation' ? $(id).value : $(id).checked;
       try { localStorage.setItem('tab-forge:score-display',JSON.stringify(scoreDisplay)); } catch { /* Optional preference. */ }
       player?.setScoreDisplay(scoreDisplay);
     });

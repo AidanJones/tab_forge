@@ -97,7 +97,10 @@ buttons also work on scores opened directly in Practice.
 ### Chords, playing instructions and lyrics
 
 The editor uses the same score view as Practice, including printing via
-**Print / PDF**. Chord diagrams appear at the top by default. Enable **Shape hints
+**Print / PDF**. The **Notation** selector shows **Tab**, **Sheet music**, or
+**Both** (the default). This choice is remembered across pages and applies to
+printing and saved Guitar Pro/alphaTex display settings. Tracks without string
+and fret data remain in sheet music view. Chord diagrams appear at the top by default. Enable **Shape hints
 above bars** to see full diagrams beside the passage, including when you pick
 individual strings instead of strumming. Both display preferences are remembered
 across the editor and Practice pages.
