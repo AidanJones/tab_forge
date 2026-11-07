@@ -54,7 +54,7 @@ string numbering, multi-digit fret alignment and spaced `+` groups are supported
 In **Fretting-hand guide → Video view**, the neck faces you like a video lesson:
 high E is at the bottom, fret 12 is on the left and open strings are on the right.
 The neck is rendered in shallow 3D. Enable **Show hand** for a translucent
-skeleton hand with cuboid finger bones and visible joint spheres. A shared palm
+skeleton hand with rounded cartoon bones and visible joints. A shared palm
 and thumb grip the neck; joint limits and clearance checks guide the fingers.
 Common chord families reuse cached grips, and the whole hand moves along the
 neck during playback. Pressing pads meet the strings, while unused fingers hover.
@@ -104,6 +104,19 @@ and fret data remain in sheet music view. Chord diagrams appear at the top by de
 above bars** to see full diagrams beside the passage, including when you pick
 individual strings instead of strumming. Both display preferences are remembered
 across the editor and Practice pages.
+
+With **Shape hints above bars** enabled, turn on **Finger examples** to add a
+cartoon skeleton-hand diagram beside each plain chord diagram. Ivory, knobby
+bone ends, slim shafts, warm shading and dark outlines keep the examples readable.
+These use the
+same fixed-bone hand solver as Video view, rotated into a normal chord chart.
+Numbers label the fretting fingers; the caption says **One possible fingering**
+or **Written fingering** when the score supplies finger hints. Unsafe or
+contradictory grips show **Check fingering** instead of an invented hand pose.
+Examples are included in Print / PDF and the preference is remembered on both
+pages. They are a visual aid and do not change the notes or exported fingerings.
+Finger assignments are modelled separately from chord frets, ready for future
+per-chord variant selection; imported written variants are already respected.
 
 ```text
 chords:

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { BONE_LENGTHS } from './hand-rig.js';
+import { BONE_PALETTE } from './cartoon-bones.js';
 
 const point = ([x, y, z]) => new THREE.Vector3(x, -y, z);
 const up = new THREE.Vector3(0, 1, 0);
@@ -12,8 +13,10 @@ export class BlockHand {
     this.root.name = 'fretting-hand';
     this.box = new THREE.BoxGeometry(1, 1, 1);
     this.ball = new THREE.SphereGeometry(1, 12, 8);
-    this.boneMaterial = new THREE.MeshStandardMaterial({ color: '#d9c9a8', roughness: 0.8, transparent: true, depthWrite: false });
-    this.jointMaterial = new THREE.MeshStandardMaterial({ color: '#52786b', roughness: 0.65, transparent: true, depthWrite: false });
+    // Rounded heads and a narrow shaft, on the same rigid axis as the old box.
+    this.boneShape = new THREE.LatheGeometry([[0,-0.5],[0.2,-0.5],[0.4,-0.47],[0.5,-0.42],[0.46,-0.34],[0.28,-0.23],[0.21,-0.1],[0.21,0.1],[0.28,0.23],[0.46,0.34],[0.5,0.42],[0.4,0.47],[0.2,0.5],[0,0.5]].map(([r,y])=>new THREE.Vector2(r,y)),16);
+    this.boneMaterial = new THREE.MeshStandardMaterial({ color: BONE_PALETTE.bone, roughness: 0.8, transparent: true, depthWrite: false });
+    this.jointMaterial = new THREE.MeshStandardMaterial({ color: BONE_PALETTE.joint, roughness: 0.65, transparent: true, depthWrite: false });
     this.palm = this.boxMesh(this.root, [100, 48, 22]);
     this.palm.name = 'palm';
     // Tilt the palm in line with the metacarpals as it cups the lower edge.
@@ -25,13 +28,20 @@ export class BlockHand {
     this.wrist.rotation.x = Math.PI / 3;
     this.fingers = [1,2,3,4].map(finger => ({
       finger, chain: this.chain(`finger-${finger}`, BONE_LENGTHS[finger], finger === 4 ? 10 : 12),
-      metacarpal: this.boxMesh(this.root, [7,1,7]),
+      metacarpal: this.boneMesh(this.root, [7,1,7]),
     }));
     this.thumb = this.chain('thumb', [45,38,30], 13);
   }
 
   boxMesh(parent, scale) {
     const mesh = new THREE.Mesh(this.box, this.boneMaterial);
+    mesh.scale.set(...scale);
+    parent.add(mesh);
+    return mesh;
+  }
+
+  boneMesh(parent,scale) {
+    const mesh=new THREE.Mesh(this.boneShape,this.boneMaterial);
     mesh.scale.set(...scale);
     parent.add(mesh);
     return mesh;
@@ -49,7 +59,7 @@ export class BlockHand {
       ball.scale.setScalar(i === 0 ? 7.5 : i === 3 ? 7 : 6);
       joint.add(ball);
       if (i < 3) {
-        const bone = this.boxMesh(joint, [width - i, lengths[i] - 12, width - 2]);
+        const bone = this.boneMesh(joint, [width - i, lengths[i] - 12, width - 2]);
         bone.position.y = lengths[i] / 2;
       }
       joints.push(joint);

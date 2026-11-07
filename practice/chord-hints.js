@@ -1,5 +1,6 @@
 import { model } from '@coderline/alphatab';
 import { CHORD_LIBRARY } from './chord-library.js';
+import { removeFingerExamples } from './finger-examples.js';
 
 const PREFIX = '__tab_forge_shape_hint__';
 const STANDARD = [64,59,55,50,45,40];
@@ -31,6 +32,7 @@ export function inferBarShape(staff, bar) {
 }
 
 export function removeSuggestedShapes(score) {
+  removeFingerExamples(score);
   for(const track of score.tracks) for(const staff of track.staves) {
     for(const bar of staff.bars) for(const voice of bar.voices) for(const beat of voice.beats) {
       if(beat.chordId?.startsWith(PREFIX)) beat.chordId=null;

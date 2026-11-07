@@ -18,19 +18,23 @@ export function mountPractice(root = document, { embedded = false } = {}) {
   let libraryRequest = 0;
   let sourceRequest = 0;
   let midiKey = '';
-  let scoreDisplay = { chordDiagrams: true, shapeHints: false, notation: 'both' };
+  let scoreDisplay = { chordDiagrams: true, shapeHints: false, notation: 'both', fingerExamples: false };
   try {
     const saved = JSON.parse(localStorage.getItem('tab-forge:score-display'));
     if (typeof saved?.chordDiagrams === 'boolean') scoreDisplay.chordDiagrams = saved.chordDiagrams;
     if (typeof saved?.shapeHints === 'boolean') scoreDisplay.shapeHints = saved.shapeHints;
+    if (typeof saved?.fingerExamples === 'boolean') scoreDisplay.fingerExamples = saved.fingerExamples;
     if (['tab','sheet','both'].includes(saved?.notation)) scoreDisplay.notation = saved.notation;
   } catch { /* Preferences are optional when browser storage is unavailable. */ }
   $('score-chords').checked = scoreDisplay.chordDiagrams;
   $('score-shapes').checked = scoreDisplay.shapeHints;
   $('score-notation').value = scoreDisplay.notation;
-  for (const [id,key] of [['score-chords','chordDiagrams'],['score-shapes','shapeHints'],['score-notation','notation']]) {
+  $('score-finger-examples').checked = scoreDisplay.fingerExamples;
+  $('score-finger-examples').disabled = !scoreDisplay.shapeHints;
+  for (const [id,key] of [['score-chords','chordDiagrams'],['score-shapes','shapeHints'],['score-notation','notation'],['score-finger-examples','fingerExamples']]) {
     $(id).addEventListener('change', () => {
       scoreDisplay[key] = id === 'score-notation' ? $(id).value : $(id).checked;
+      $('score-finger-examples').disabled = !scoreDisplay.shapeHints;
       try { localStorage.setItem('tab-forge:score-display',JSON.stringify(scoreDisplay)); } catch { /* Optional preference. */ }
       player?.setScoreDisplay(scoreDisplay);
     });

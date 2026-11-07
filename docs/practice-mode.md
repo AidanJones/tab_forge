@@ -390,7 +390,7 @@ E/minor/A barre, C, E, A-minor and D grip templates seed the search; normalised
 grips and chain solutions are cached and reused when transposed up the neck.
 Barres constrain the relevant finger segments to lie flat at the string plane.
 
-`block-hand.js` attaches cuboid bone meshes and joint spheres to real Three.js
+`block-hand.js` attaches bone meshes and joint spheres to real Three.js
 Bone hierarchies. The renderer uses the exact solved joints, including during
 transitions; it no longer reshapes fingers independently. Slides interpolate a
 shared palm frame and joint angles, with angular corrections to clear the neck
@@ -476,3 +476,34 @@ instructions and lyrics, as well as the editor's ordinary print CSS. Native
 alphaTab annotation references:
 [staff chord metadata](https://alphatab.net/docs/alphatex/staff-metadata/),
 [beat text, lyrics and chord properties](https://alphatab.net/docs/alphatex/beat-properties/).
+
+## Follow-up: skeleton finger examples alongside chord hints
+
+**Finger examples** is a remembered opt-in available with inline shape hints.
+`finger-examples.js` separates chord pitches from a fingering variant (id,
+origin and a high-string-first assignment array). It respects contextual written
+finger hints, uses known grip templates where compatible and solves the full
+chord using the same `naturalHandPose` as Video view. An explicit-assignment API
+supports alternative grips without changing chord frets; an authoring picker
+and persistence for custom variants are future work. Conflicting hints and
+unsolved grips are labelled rather than illustrated with an invalid pose.
+
+`finger-example-renderer.js` registers a public alphaTab `RenderEngineFactory`
+and `ICanvas` adapter over the SVG backend. View-only chord references use marked
+text glyphs whose measured bounds reserve room for a regular chart and a cartoon
+skeletal chart. Bone and joint positions are projected from the solved 3D rig;
+contact positions map to the chord chart's strings/frets. The top chord key stays
+unchanged. No private glyph replacement or DOM-positioned overlay is required,
+and the same renderer supplies the native complete-score print view.
+
+The custom renderer runs on the main thread only while examples are enabled;
+ordinary notation returns to alphaTab's worker renderer. Audio remains on its
+existing clock. A roomier stretch setting avoids diagram collisions and is also
+used for printing. Exports clone the score, restore original chord references and
+remove example-only definitions, preserving original written note fingerings.
+
+`cartoon-bones.js` shares the ivory/brown palette and flared-end, narrow-shaft
+bone paths between the diagrams and SVG hand fallback. It supplies original
+code-drawn silhouettes with shadows and highlights, informed by the user's
+cartoon reference. The 3D hand now uses rounded lathed bone meshes on the same
+joint axes instead of cuboids; skeletal constraints and endpoints stay unchanged.

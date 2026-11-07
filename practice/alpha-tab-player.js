@@ -2,6 +2,8 @@ import * as alphaTab from '@coderline/alphatab';
 import { rangeForBars, sameRange, snapRangeToBars, speedPercent } from './transport.js';
 import { suggestFingering } from './fingering.js';
 import { addSuggestedShapes, removeSuggestedShapes, scoreForExport } from './chord-hints.js';
+import { addFingerExamples } from './finger-examples.js';
+import { FINGER_EXAMPLE_ENGINE, registerFingerExampleRenderer } from './finger-example-renderer.js';
 
 export const SUPPORTED_FILES = /\.(gp[345]?|gpx|xml|musicxml|mxl|tex|alphatex)$/i;
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
@@ -22,7 +24,7 @@ export class PracticePlayer {
     this.source = '';
     this.fingerPlan = new WeakMap();
     this.activeBeats = [];
-    this.scoreDisplay = { chordDiagrams: true, shapeHints: false, notation: 'both' };
+    this.scoreDisplay = { chordDiagrams: true, shapeHints: false, notation: 'both', fingerExamples: false };
     this.suggestedShapes = 0;
     this.position = { currentTime: 0, endTime: 0, currentTick: 0, endTick: 0 };
     this.api = new alphaTab.AlphaTabApi(element, {
@@ -39,6 +41,7 @@ export class PracticePlayer {
       },
     });
     this.api.masterVolume = 0.65;
+    this.standardStretchForce = this.api.settings.display.stretchForce;
     this.api.midiEventsPlayedFilter = [alphaTab.midi.MidiEventType.NoteOn, alphaTab.midi.MidiEventType.NoteOff];
     this.api.midiEventsPlayed.on(({ events }) => {
       const track = this.api.score?.tracks[this.selectedTrack];
@@ -214,11 +217,20 @@ export class PracticePlayer {
     this.suggestedShapes = this.scoreDisplay.shapeHints ? addSuggestedShapes(score) : 0;
     score.stylesheet.globalDisplayChordDiagramsOnTop = this.scoreDisplay.chordDiagrams;
     score.stylesheet.perTrackChordDiagramsOnTop = null;
-    score.stylesheet.globalDisplayChordDiagramsInScore = this.scoreDisplay.shapeHints;
+    const examples=this.scoreDisplay.shapeHints && this.scoreDisplay.fingerExamples;
+    score.stylesheet.globalDisplayChordDiagramsInScore = this.scoreDisplay.shapeHints && !examples;
+    if(examples)addFingerExamples(score);
   }
 
   setScoreDisplay(options) {
     this.scoreDisplay = { ...this.scoreDisplay, ...options };
+    const engine=this.scoreDisplay.shapeHints && this.scoreDisplay.fingerExamples ? FINGER_EXAMPLE_ENGINE : 'default';
+    this.api.settings.display.stretchForce = engine===FINGER_EXAMPLE_ENGINE ? Math.max(2,this.standardStretchForce) : this.standardStretchForce;
+    if(this.api.settings.core.engine!==engine) {
+      registerFingerExampleRenderer();
+      this.api.settings.core.engine=engine;
+      this.api.updateSettings();
+    }
     if (this.api.score) {
       this.applyScoreDisplay(this.api.score);
       this.api.render();
@@ -226,7 +238,9 @@ export class PracticePlayer {
     }
   }
 
-  printScore() { if (this.api.score) this.api.print(); }
+  printScore() {
+    if (this.api.score) this.api.print(undefined, this.scoreDisplay.shapeHints && this.scoreDisplay.fingerExamples ? {display:{stretchForce:Math.max(2,this.standardStretchForce)}} : undefined);
+  }
 
   loadTex(text, source = 'alphaTex score') {
     ++this.request; // Supersede a pending file read.
