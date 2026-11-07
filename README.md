@@ -49,7 +49,14 @@ and an unconnected
 [AnalyserNode](https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode).
 
 Choose **Play-along** above the score in the editor or Practice page for scrolling
-string lanes. Play a note as its fret number crosses the fixed **PLAY NOW** line.
+string lanes. **Start delay** defaults to a visible three-second countdown before
+starting or resuming; choose Off or five seconds if preferred. Both Play buttons
+and Space follow this setting while Play-along is selected. Pause is immediate;
+Stop, Cancel, leaving the view, hiding the page or changing the score cancels a
+pending start. This delay runs before any optional musical count-in and does not
+repeat at loop boundaries. The preference is shared by the editor and Practice.
+
+Play a note as its fret number crosses the fixed **PLAY NOW** line.
 Small coloured numbers suggest fretting fingers; chord names, playing instructions
 and written up/down brush or pick strokes appear above the lanes. Sustains trail
 the notes and tied notes use a hold symbol. The look-ahead control changes how

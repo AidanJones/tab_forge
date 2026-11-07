@@ -10,6 +10,7 @@ async function loadSong(page) {
   await page.locator('#file').setInputFiles({name:'scroll.gp',mimeType:'application/octet-stream',buffer:Buffer.from(new exporter.Gp7Exporter().export(score,settings))});
   await expect(page.locator('#play')).toBeEnabled();
   await page.getByRole('button',{name:'Play-along',exact:true}).click();
+  await page.getByLabel('Play-along start delay').selectOption('0');
 }
 
 test('scrolling cues share playback, pause, seek, speed and view changes',async({page})=>{
@@ -86,4 +87,55 @@ test('editor play-along is readable on mobile and updates with the lesson',async
   await page.getByRole('button',{name:'Update preview',exact:true}).click();
   await expect(page.locator('#play-along svg')).toContainText('C');
   await expect(page.locator('#play-along svg')).not.toContainText('G/B');
+});
+
+test('Play-along counts down before starting and again on resume, with immediate pause and cancellation',async({page})=>{
+  await page.goto('/practice.html');await page.locator('#demo').click();
+  await expect(page.locator('#play')).toBeEnabled();
+  await page.getByRole('button',{name:'Play-along',exact:true}).click();
+  await expect(page.getByLabel('Play-along start delay')).toHaveValue('3');
+  await page.locator('#speed').fill('25');
+  const start=await page.locator('#position').evaluate(n=>n.value);
+  await page.locator('#play-along-play').click();
+  await expect(page.locator('#play-along-countdown-number')).toHaveText('3');
+  await expect(page.locator('#play')).toHaveText('Cancel start');
+  await page.locator('#play-along').screenshot({path:'test-results/play-along-countdown.png'});
+  await expect(page.locator('#play-along-countdown-number')).toHaveText('2');
+  expect(await page.locator('#position').evaluate(n=>n.value)).toBe(start);
+  await expect(page.locator('#play')).toHaveText('Pause');
+  await expect(page.locator('#play-along-countdown')).toBeHidden();
+  await expect.poll(()=>page.locator('#position').evaluate(n=>n.value)).toBeGreaterThan(100);
+  await page.locator('#play-along-play').click();
+  await expect(page.locator('#play')).toHaveText('Play');
+  const paused=await page.locator('#position').evaluate(n=>n.value);
+  await page.locator('#play-along').focus();await page.keyboard.press('Space');
+  await expect(page.locator('#play-along-countdown')).toBeVisible();
+  expect(await page.locator('#position').evaluate(n=>n.value)).toBe(paused);
+  await page.keyboard.press('Space');
+  await expect(page.locator('#play-along-countdown')).toBeHidden();
+  await page.waitForTimeout(3200);
+  expect(await page.locator('#position').evaluate(n=>n.value)).toBe(paused);
+  await expect(page.locator('#play')).toHaveText('Play');
+});
+
+test('Stop and leaving Play-along cancel a pending start; start-delay preferences work in the editor',async({page})=>{
+  await page.goto('/practice.html');await page.locator('#demo').click();await expect(page.locator('#play')).toBeEnabled();
+  await page.getByRole('button',{name:'Play-along',exact:true}).click();
+  await page.getByLabel('Play-along start delay').selectOption('5');
+  await page.locator('#play-along-play').click();await expect(page.locator('#play-along-countdown-number')).toHaveText('5');
+  await page.locator('#play-along-stop').click();await expect(page.locator('#play')).toHaveText('Play');
+  await page.locator('#play-along-play').click();await expect(page.locator('#play')).toHaveText('Cancel start');
+  await page.getByRole('button',{name:'Score',exact:true}).click();await expect(page.locator('#play')).toHaveText('Play');
+  await page.waitForTimeout(5200);await expect(page.locator('#play')).toHaveText('Play');
+  await page.goto('/index.html');
+  await page.locator('#input').fill('title: Ready to play\n[Intro]\n0s6 2f6s 3f6s 0s5');
+  await page.getByRole('button',{name:'Update preview',exact:true}).click();await expect(page.locator('#play')).toBeEnabled();
+  await page.getByRole('button',{name:'Play-along',exact:true}).click();await expect(page.getByLabel('Play-along start delay')).toHaveValue('5');
+  await page.locator('#play-along-play').click();await expect(page.locator('#play-along-countdown')).toBeVisible();
+  await page.locator('#input').fill('title: Changed\n[Intro]\n2f6s');
+  await expect(page.locator('#play-along-countdown')).toBeHidden();
+  await page.getByRole('button',{name:'Update preview',exact:true}).click();await expect(page.locator('#play')).toBeEnabled();
+  await page.getByLabel('Play-along start delay').selectOption('0');
+  await page.locator('#play-along-play').click();await expect(page.locator('#play')).toHaveText('Pause');
+  await expect(page.locator('#play-along-countdown')).toBeHidden();
 });

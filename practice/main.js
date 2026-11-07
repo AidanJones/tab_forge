@@ -26,6 +26,7 @@ export function mountPractice(root = document, { embedded = false } = {}) {
   const fretboard = new Fretboard($('finger-guide'));
   const playAlong = new PlayAlong($('play-along'));
   for (const button of root.querySelectorAll('[data-player-view]')) button.addEventListener('click', () => {
+    player?.cancelCountdown(true);
     const scrolling = button.dataset.playerView === 'scrolling';
     $('play-along').hidden = !scrolling;
     $('score-viewport').hidden = scrolling;
@@ -38,6 +39,19 @@ export function mountPractice(root = document, { embedded = false } = {}) {
   let mixerKey = '';
   let barKey = '';
   let latest;
+  let startDelay = 3;
+  try {
+    const saved = localStorage.getItem('tab-forge:start-delay');
+    if (saved !== null && [0,3,5].includes(Number(saved))) startDelay = Number(saved);
+  } catch { /* Optional preference. */ }
+  $('play-along-delay').value = String(startDelay);
+  $('play-along-delay').addEventListener('change', event => {
+    startDelay = Number(event.target.value);
+    player?.cancelCountdown(true);
+    try { localStorage.setItem('tab-forge:start-delay', String(startDelay)); } catch { /* Optional preference. */ }
+  });
+  const playPause = () => player?.playPause($('play-along').hidden ? 0 : startDelay);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) player?.cancelCountdown(true); });
   let loadingTimer;
   let library = [];
   let libraryRequest = 0;
@@ -167,14 +181,16 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     playAlong.update(state);
     $('play-along-play').disabled = !state.ready;
     $('play-along-stop').disabled = !state.ready;
-    $('play-along-play').textContent = state.playing ? 'Pause scrolling' : 'Play scrolling';
+    $('play-along-play').textContent = state.countdown ? 'Cancel countdown' : state.playing ? 'Pause scrolling' : 'Play scrolling';
+    $('play-along-countdown').hidden = !state.countdown;
+    $('play-along-countdown-number').textContent = state.countdown || '';
     $('score-title').textContent = state.title;
     $('score-artist').textContent = state.artist;
     $('source-label').textContent = state.source || 'Your practice space';
     $('empty-state').hidden = state.tracks.length > 0;
     $('status').textContent = state.error ? 'Playback needs attention.' : state.loading
       ? 'Reading the score…' : state.ready
-        ? (state.playing ? 'Playing · follow the cursor.' : 'Ready when you are.')
+        ? (state.countdown ? `Get ready · starting in ${state.countdown}…` : state.playing ? 'Playing · follow the cursor.' : 'Ready when you are.')
         : 'Loading score, fonts and guitar sounds…';
     const error = state.error || localError;
     $('error').textContent = error;
@@ -186,7 +202,7 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     for (const id of ['from-bar', 'to-bar', 'select-bars', 'clear-range']) {
       $(id).disabled = !state.ready || !state.bars.length;
     }
-    $('play').textContent = state.playing ? 'Pause' : 'Play';
+    $('play').textContent = state.countdown ? 'Cancel start' : state.playing ? 'Pause' : 'Play';
     $('shape-hint-status').textContent = state.suggestedShapes
       ? `${state.suggestedShapes} suggested ${state.suggestedShapes===1?'grip':'grips'} labelled in the score. Written shapes take priority.`
       : 'Written shapes take priority; suggestions need an unambiguous fixed grip.';
@@ -317,8 +333,8 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     instance.loadTex(DEMO, 'Original demo · First steps');
   }));
 
-  $('play').addEventListener('click', () => run(() => player.playPause()));
-  $('play-along-play').addEventListener('click', () => run(() => player.playPause()));
+  $('play').addEventListener('click', () => run(playPause));
+  $('play-along-play').addEventListener('click', () => run(playPause));
   $('play-along-stop').addEventListener('click', () => run(() => player.stop()));
   $('print-score').addEventListener('click', () => run(() => player.printScore()));
   for (const [id, format, type] of [['save-gp', 'gp', 'application/octet-stream'], ['save-alphatex', 'alphatex', 'text/plain;charset=utf-8'], ['save-midi', 'mid', 'audio/midi']]) {
@@ -392,7 +408,7 @@ export function mountPractice(root = document, { embedded = false } = {}) {
   document.addEventListener('keydown', event => {
     if (embedded && !root.contains(event.target)) return;
     if (event.defaultPrevented || event.repeat || event.ctrlKey || event.metaKey || event.altKey || isTypingTarget(event.target) || !latest?.ready) return;
-    if (event.code === 'Space') { event.preventDefault(); run(() => player.playPause()); }
+    if (event.code === 'Space') { event.preventDefault(); run(playPause); }
     else if (event.key.toLowerCase() === 'l') { event.preventDefault(); player.setLoop(!latest.looping); }
     else if (event.key === '[' || event.key === ']') {
       event.preventDefault();

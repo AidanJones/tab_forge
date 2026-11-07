@@ -141,10 +141,10 @@
         <button type="button" data-player-view="scrolling" aria-pressed="false" aria-controls="play-along">Play-along</button>
         <span>Read the score or follow the scrolling strings.</span>
       </div>
-      <section id="play-along" class="play-along" aria-label="Scrolling play-along" hidden>
+      <section id="play-along" class="play-along" aria-label="Scrolling play-along" tabindex="0" hidden>
         <div class="play-along-heading"><div><h3>Follow the strings</h3><p>Fret numbers cross the play line from right to left. Small numbers show fingers; 0 is an open string.</p></div><label>Look ahead <select aria-label="Play-along look ahead"><option value="4">4 beats</option><option value="8" selected>8 beats</option><option value="16">16 beats</option></select></label></div>
-        <div class="play-along-controls"><button id="play-along-play" type="button" disabled>Play scrolling</button><button id="play-along-stop" type="button" disabled>Stop scrolling</button><span>Space to play / pause · [ / ] to change speed</span></div>
-        <svg role="img" aria-label="Scrolling string lanes with frets, finger hints and a fixed play-now line"></svg>
+        <div class="play-along-controls"><button id="play-along-play" type="button" disabled>Play scrolling</button><button id="play-along-stop" type="button" disabled>Stop scrolling</button><label>Start delay <select id="play-along-delay" aria-label="Play-along start delay"><option value="0">Off</option><option value="3" selected>3 seconds</option><option value="5">5 seconds</option></select></label><span>Space to play / pause · [ / ] to change speed</span></div>
+        <div class="play-along-stage"><svg role="img" aria-label="Scrolling string lanes with frets, finger hints and a fixed play-now line"></svg><div id="play-along-countdown" class="play-along-countdown" role="status" aria-live="polite" aria-atomic="true" hidden><span>Get ready</span><strong id="play-along-countdown-number"></strong><span>Hands on the guitar · Cancel or Space to stop</span></div></div>
         <p class="play-along-status">Load a score to begin.</p>
         <p class="play-along-legend"><span>1 Index</span><span>2 Middle</span><span>3 Ring</span><span>4 Little</span><span>↓ Down · ↑ Up</span><span>↝ Hold tied note</span></p>
         <p class="play-along-help">Strum and pick arrows follow markings in the score. Finger suggestions are starting points. This view guides timing; it does not listen or score your playing.</p>

@@ -25,6 +25,7 @@ export class PracticePlayer {
     this.source = '';
     this.fingerPlan = new WeakMap();
     this.activeBeats = [];
+    this.countdownRemaining = 0;
     this.scoreDisplay = { chordDiagrams: true, shapeHints: false, notation: 'both', fingerExamples: false };
     this.suggestedShapes = 0;
     this.position = { currentTime: 0, endTime: 0, currentTick: 0, endTick: 0 };
@@ -57,6 +58,7 @@ export class PracticePlayer {
     });
     this.api.playerFinished.on(() => this.onSilence());
     this.api.playerStateChanged.on(({ state }) => {
+      if (state === alphaTab.synth.PlayerState.Playing) this.cancelCountdown();
       if (state !== alphaTab.synth.PlayerState.Playing) this.onSilence();
     });
     for (const event of ['playerReady', 'renderFinished', 'playerStateChanged']) {
@@ -65,12 +67,14 @@ export class PracticePlayer {
     this.api.midiLoaded.on(() => { this.prepareFingering(); this.emit(); });
     this.api.activeBeatsChanged.on(({ activeBeats }) => { this.activeBeats = activeBeats; this.emit(); });
     this.api.playerPositionChanged.on(position => {
+      if (position.isSeek) this.cancelCountdown();
       if (position.isSeek) this.activeBeats = [];
       if (position.isSeek) this.onSilence();
       this.position = position;
       this.emit();
     });
     this.api.playbackRangeChanged.on(({ playbackRange }) => {
+      this.cancelCountdown();
       this.onSilence();
       if (this.snap === 'bar' && playbackRange) {
         const snapped = snapRangeToBars(playbackRange, this.bars);
@@ -82,6 +86,7 @@ export class PracticePlayer {
       this.emit();
     });
     this.api.error.on(error => {
+      this.cancelCountdown();
       this.error = `The score or audio could not load: ${error.message}. Reload the page to retry audio setup, or open another score.`;
       this.loading = false;
       this.emit();
@@ -105,6 +110,7 @@ export class PracticePlayer {
       title: score?.title || this.source || 'Choose a score to begin',
       artist: score?.artist || '',
       playing: this.api.playerState === alphaTab.synth.PlayerState.Playing,
+      countdown: this.countdownRemaining,
       speed: Math.round(this.api.playbackSpeed * 100),
       looping: this.api.isLooping,
       range: this.api.playbackRange ? { ...this.api.playbackRange } : null,
@@ -203,6 +209,7 @@ export class PracticePlayer {
 
   loadScore(score, source) {
     if (this.disposed) return;
+    this.cancelCountdown();
     this.onSilence();
     this.api.stop();
     this.api.playbackRange = null;
@@ -264,6 +271,7 @@ export class PracticePlayer {
   }
 
   async loadFile(file) {
+    this.cancelCountdown();
     const request = ++this.request;
     if (!SUPPORTED_FILES.test(file.name)) throw new Error('Choose a Guitar Pro, MusicXML or alphaTex file.');
     if (file.size > MAX_FILE_BYTES) throw new Error('Choose a file smaller than 50 MB.');
@@ -286,16 +294,42 @@ export class PracticePlayer {
     }
   }
 
-  playPause() {
+  cancelCountdown(notify = false) {
+    clearInterval(this.countdownTimer);
+    const pending = this.countdownRemaining > 0;
+    this.countdownRemaining = 0;
+    if (pending && notify) this.emit();
+    return pending;
+  }
+
+  playPause(delaySeconds = 0) {
+    if (this.cancelCountdown(true)) return;
     if (!this.snapshot.ready) return;
     this.error = '';
     this.onSilence();
     if (this.snapshot.playing) this.api.pause();
+    else if ([3,5].includes(delaySeconds)) {
+      // Unlock browser audio during the click/key gesture without playing notes.
+      this.api.player?.output.activate();
+      const deadline = performance.now() + delaySeconds * 1000;
+      this.countdownRemaining = delaySeconds;
+      this.countdownTimer = setInterval(() => {
+        const remaining = Math.max(0, Math.ceil((deadline - performance.now()) / 1000));
+        if (remaining === this.countdownRemaining) return;
+        this.countdownRemaining = remaining;
+        if (!remaining) {
+          this.cancelCountdown();
+          if (document.hidden || this.disposed || !this.snapshot.ready) { this.emit(); return; }
+          try { this.playPause(); }
+          catch (error) { this.error = error.message; this.emit(); }
+        } else this.emit();
+      }, 50);
+    }
     else if (!this.api.play()) throw new Error('Audio is not ready. Try Play again after loading finishes.');
     this.emit();
   }
 
-  stop() { this.onSilence(); this.activeBeats = []; this.api.stop(); this.emit(); }
+  stop() { this.cancelCountdown(); this.onSilence(); this.activeBeats = []; this.api.stop(); this.emit(); }
   setSpeed(value) { this.api.playbackSpeed = speedPercent(value) / 100; this.emit(); }
   setLoop(value) { this.api.isLooping = value; this.emit(); }
   setCountIn(value) { this.api.countInVolume = value ? 0.7 : 0; this.emit(); }
@@ -312,6 +346,7 @@ export class PracticePlayer {
 
   selectTrack(index) {
     if (!this.api.score?.tracks[index]) return;
+    this.cancelCountdown();
     this.onSilence();
     this.selectedTrack = index;
     this.activeBeats = [];
@@ -365,6 +400,7 @@ export class PracticePlayer {
   }
 
   dispose() {
+    this.cancelCountdown();
     this.disposed = true;
     this.onSilence();
     ++this.request;

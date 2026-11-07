@@ -15,7 +15,7 @@ export class PlayAlong {
     this.root = root;
     this.canvas = root.querySelector('svg');
     this.status = root.querySelector('.play-along-status');
-    this.lookahead = root.querySelector('select');
+    this.lookahead = root.querySelector('[aria-label="Play-along look ahead"]');
     this.lookahead.addEventListener('change', () => this.draw());
     document.addEventListener('visibilitychange', () => this.refresh());
     this.resize = new ResizeObserver(() => this.refresh());
