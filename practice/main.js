@@ -6,26 +6,28 @@ import { download, scoreFilename } from './download.js';
 import { PlayAlong } from './play-along.js';
 import { Tuner } from './tuner.js';
 import { Trainers } from './trainers.js';
+import { mountWorkflow } from './workflow.js';
 
 export function mountPractice(root = document, { embedded = false } = {}) {
   const $ = id => root.querySelector(`#${id}`);
   let trainers;
+  let workflow;
   let player;
   let latest;
   let microphoneState;
   let pendingFollowExercise;
   const tuner = new Tuner($('guitar-tuner'), { onReading: state => {
-    trainers?.update(state);
+    if(['chords','scales'].includes(document.body.dataset.task))trainers?.update(state);
     player?.hearNote(state);
     if(state.state!=='listening' && $('play-along-mode').value==='wait')player?.cancelCountdown(true);
     const changed=microphoneState!==state.state;
     microphoneState=state.state;
     if(changed && latest)render(latest);
-    if(changed && state.state==='listening' && document.activeElement===$('follow-microphone'))$('play-along-play').focus({preventScroll:true});
+    if(changed && state.state==='listening' && document.activeElement===$('follow-microphone'))$('play').focus({preventScroll:true});
     renderFollowMicrophone(state);
   } });
   trainers = new Trainers($('guitar-tuner'), (exercise, {wait=false} = {}) => {
-    if(wait)pendingFollowExercise=exercise.title;
+    pendingFollowExercise={title:exercise.title,wait,from:'scales'};
     if (embedded) {
       root.dispatchEvent(new CustomEvent('tab-forge:exercise', { bubbles:true, detail:exercise }));
       return;
@@ -210,15 +212,12 @@ export function mountPractice(root = document, { embedded = false } = {}) {
 
   function render(state) {
     latest = state;
+    workflow?.update(state);
     midi.setVolume(state.volume);
     fretboard.update(state.fingering);
     playAlong.update(state);
-    $('play-along-play').disabled = !state.ready;
-    $('play-along-stop').disabled = !state.ready;
     const waitMode=$('play-along-mode').value==='wait';
     $('follow-controls').hidden=!waitMode;
-    $('play-along-play').textContent = state.countdown ? 'Cancel countdown' : state.waiting.active ? 'Pause listening' : state.playing ? 'Pause scrolling' : waitMode ? 'Start listening' : 'Play scrolling';
-    if(waitMode && microphoneState!=='listening')$('play-along-play').disabled=true;
     $('play-along-countdown').hidden = !state.countdown;
     $('play-along-countdown-number').textContent = state.countdown || '';
     $('score-title').textContent = state.title;
@@ -239,7 +238,7 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     for (const id of ['from-bar', 'to-bar', 'select-bars', 'clear-range']) {
       $(id).disabled = !state.ready || !state.bars.length;
     }
-    $('play').textContent = state.countdown ? 'Cancel start' : state.playing || state.waiting.active ? 'Pause' : 'Play';
+    $('play').textContent = state.countdown ? 'Cancel start' : state.waiting.active ? 'Pause listening' : state.playing ? 'Pause' : waitMode && !$('play-along').hidden ? 'Start listening' : 'Play';
     if(waitMode && !$('play-along').hidden && microphoneState!=='listening')$('play').disabled=true;
     $('shape-hint-status').textContent = state.suggestedShapes
       ? `${state.suggestedShapes} suggested ${state.suggestedShapes===1?'grip':'grips'} labelled in the score. Written shapes take priority.`
@@ -291,15 +290,17 @@ export function mountPractice(root = document, { embedded = false } = {}) {
       $('range-label').textContent = `Whole score${state.looping ? ' · looping' : ' · turn on Loop to repeat.'}`;
     }
     if (state.ready) clearTimeout(loadingTimer);
-    if(state.ready && pendingFollowExercise===state.title){
+    if(state.ready && pendingFollowExercise?.title===state.title){
+      const intent=pendingFollowExercise;
       pendingFollowExercise=null;
-      $('play-along-mode').value='wait';
-      root.querySelector('[data-player-view="scrolling"]').click();
-      $('follow-controls').hidden=false;
+      document.dispatchEvent(new CustomEvent('tab-forge:practice-open',{detail:intent}));
+      $('play-along-mode').value=intent.wait?'wait':'timed';
+      root.querySelector(`[data-player-view="${intent.wait?'scrolling':'score'}"]`).click();
+      $('follow-controls').hidden=!intent.wait;
       renderFollowMicrophone(tuner.latest);
-      $('play-along').scrollIntoView({block:'center'});
+      $('drop-zone').scrollIntoView({block:'start'});
       render(state);
-      requestAnimationFrame(()=>$(microphoneState==='listening'?'play-along-play':'follow-microphone').focus({preventScroll:true}));
+      if(intent.wait)requestAnimationFrame(()=>$(microphoneState==='listening'?'play':'follow-microphone').focus({preventScroll:true}));
     }
   }
 
@@ -318,6 +319,8 @@ export function mountPractice(root = document, { embedded = false } = {}) {
   });
 
   function openFile(file) {
+    pendingFollowExercise=null;
+    document.dispatchEvent(new CustomEvent('tab-forge:practice-open',{detail:{from:'songs',wait:false}}));
     const request = ++sourceRequest;
     return run(async () => {
       const instance = await ensurePlayer();
@@ -382,8 +385,6 @@ export function mountPractice(root = document, { embedded = false } = {}) {
   }));
 
   $('play').addEventListener('click', () => run(playPause));
-  $('play-along-play').addEventListener('click', () => run(playPause));
-  $('play-along-stop').addEventListener('click', () => run(() => player.stop()));
   $('print-score').addEventListener('click', () => run(() => player.printScore()));
   for (const [id, format, type] of [['save-gp', 'gp', 'application/octet-stream'], ['save-alphatex', 'alphatex', 'text/plain;charset=utf-8'], ['save-midi', 'mid', 'audio/midi']]) {
     $(id).addEventListener('click', () => run(() => {
@@ -454,6 +455,7 @@ export function mountPractice(root = document, { embedded = false } = {}) {
   window.addEventListener('drop', event => event.preventDefault());
 
   document.addEventListener('keydown', event => {
+    if($('drop-zone').closest('[hidden]'))return;
     if (embedded && !root.contains(event.target)) return;
     if (event.defaultPrevented || event.repeat || event.ctrlKey || event.metaKey || event.altKey || isTypingTarget(event.target) || !latest?.ready) return;
     if (event.code === 'Space') { event.preventDefault(); run(playPause); }
@@ -474,6 +476,11 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     showError('Start the local development server and open Practice over http://localhost. Browser audio workers cannot run reliably from a file URL.');
   }
   else if (!embedded) refreshLibrary();
+
+  workflow=mountWorkflow(root,{embedded,pause:()=>player?.pause(),stopMicrophone:()=>tuner.mic.stop(),checkChord:()=>{
+    trainers.resetChord();document.querySelector('.trainer-listen').checked=true;
+    if(tuner.latest?.state!=='listening')tuner.mic.start(tuner.$('.tuner-input').value);
+  }});
 
   return {
     loadTex(text, source) {

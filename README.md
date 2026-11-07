@@ -11,7 +11,16 @@ available for existing lesson files.
 
 ## Browser practice
 
-Open **Tuner, chord trainer & scales** in either page, even without a loaded
+Both pages use the same **Write / Songs / Tune / Chords / Scales** task navigation.
+Tools do not require a loaded song. Back/Forward retains same-page selections and
+song position; switching tasks pauses playback. Write offers **Practise this tab**
+and **Back to writing**, automatic browser drafts and **Restore previous lesson**
+after an exercise replaces the notes. The score comes before optional hand,
+appearance, passage, USB MIDI and export disclosures. The library folds away once
+a score is loaded. See [the user journeys and layout review](docs/ux-review.md)
+for the rationale, user stories and further recommendations.
+
+Choose **Tune**, **Chords** or **Scales** in either page, even without a loaded
 song. **Start microphone** asks for browser permission; choose your laptop mic
 or another input after access is granted. Use headphones, mute the unused strings
 and pluck one string at a time. The chromatic tuner shows the detected note,
@@ -24,8 +33,10 @@ unclear pitch and paused browser audio. The actual microphone name is shown;
 switch Input while listening to try the laptop mic, or use **Resume audio** if
 browser audio is suspended.
 The microphone is analysed locally, never recorded/uploaded or routed to the
-speakers. Stop, collapsing the tools, hiding the page or leaving it releases the
-microphone; starting again is explicit. Browsers require localhost or HTTPS.
+speakers. Stop, leaving a task, closing a scale quick check, hiding the page or
+leaving it releases the microphone; starting again is explicit. The explicit
+scale-to-microphone-practice action keeps capture ready for the player.
+Browsers require localhost or HTTPS.
 
 **Chord check** provides 16 chord shapes and waits for each correct string pitch,
 low to high, when **Check notes with microphone** is enabled. It checks a held
@@ -87,7 +98,7 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Open the local URL printed by Vite and choose **Open Practice**, or visit
+Open the local URL printed by Vite and choose **Songs**, or visit
 `http://127.0.0.1:5173/practice.html` when the server uses its default port.
 With npm, use `npm install` and `npm run dev` instead.
 

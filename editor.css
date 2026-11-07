@@ -11,3 +11,6 @@
 @media(max-width:1000px){.editor-workspace{grid-template-columns:1fr}.input-section{position:static}textarea{height:300px;min-height:250px}}
 @media print{.lesson-timing{display:none!important}}
 @media print{#editor-player{display:block!important}#editor-player .score-heading,#editor-player .transport,#editor-player .position,#editor-player .practice-settings,#editor-player .finger-guide,#editor-player .score-display-options,#editor-player .workspace-footer,#editor-player #empty-state{display:none!important}#editor-player #score-viewport{height:auto!important;max-height:none!important;overflow:visible!important}#editor-player .workspace{overflow:visible!important;border:0!important}}
+body[data-task] .intro .practice-link{display:none}.editor-flow-actions a{font-size:11px}body[data-task] .preview-panel>.panel-heading{flex-wrap:wrap;min-height:74px;padding-block:16px}.focused-practice #editor-player #score-viewport{height:min(70vh,800px)}@media(max-width:850px){body[data-task] .editor-workspace{grid-template-columns:1fr}body[data-task] textarea{height:290px;min-height:240px}}
+#editor-player .workspace:not(.has-score)>#score-viewport{height:auto;min-height:240px}
+@media(min-width:1050px){body[data-task] .input-section{top:95px}}

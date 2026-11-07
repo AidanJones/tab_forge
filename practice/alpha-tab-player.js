@@ -343,6 +343,7 @@ export class PracticePlayer {
   }
 
   stop() { this.cancelCountdown(); this.noteFollowing.reset(); this.onSilence(); this.activeBeats = []; this.api.stop(); this.emit(); }
+  pause() { this.cancelCountdown();this.noteFollowing.pause();this.onSilence();if(this.snapshot.playing)this.api.pause();this.emit(); }
   hearNote(state) {
     if(!this.noteFollowing.active)return;
     if(state.state!=='listening'){this.noteFollowing.pause();this.emit();return;}

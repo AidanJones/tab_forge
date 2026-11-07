@@ -1,3 +1,4 @@
+import { openSection } from './workflow-helpers.js';
 import { test, expect } from '@playwright/test';
 
 async function fakeMidi(page, denied = false) {
@@ -47,8 +48,11 @@ test('played score events reach the selected USB MIDI output and Stop releases t
   await expect(page.locator('#midi-enabled')).toBeChecked();
   await page.locator('#midi-channel').selectOption('3');
   await page.locator('#speed').fill('50');
+  await openSection(page, '#passage-tracks');
   await page.locator('#from-bar').selectOption('0');
+  await openSection(page, '#passage-tracks');
   await page.locator('#to-bar').selectOption('0');
+  await openSection(page, '#passage-tracks');
   await page.locator('#select-bars').click();
   await page.locator('#loop').check();
   await page.getByRole('button', { name: 'Play-along', exact: true }).click();

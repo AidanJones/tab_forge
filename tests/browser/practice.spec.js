@@ -1,3 +1,4 @@
+import { openSection } from './workflow-helpers.js';
 import { test, expect } from '@playwright/test';
 import { importer, exporter, Settings } from '@coderline/alphatab';
 import { DEMO } from '../../practice/demo.js';
@@ -27,9 +28,12 @@ test('demo renders locally and supports playback, speed, track mixing and stop',
   await page.locator('#count-in').check();
   await page.locator('#metronome').check();
   await page.locator('#count-in').uncheck();
+  await openSection(page, '#passage-tracks');
   await page.getByLabel('Mute Bass', { exact: true }).check();
   await page.getByLabel('Solo Guitar', { exact: true }).check();
+  await openSection(page, '#passage-tracks');
   await page.locator('#track').selectOption('1');
+  await openSection(page, '#passage-tracks');
   await expect(page.locator('#track')).toHaveValue('1');
   await expect(page.getByLabel('Mute Bass', { exact: true })).toBeChecked();
   await page.locator('#play').click();
@@ -71,6 +75,7 @@ test('keyboard shortcuts work in the score without stealing input keys', async (
   await expect(page.locator('#play')).toHaveText('Pause');
   await page.keyboard.press('Space');
   await expect(page.locator('#play')).toHaveText('Play');
+  await openSection(page, '#passage-tracks');
   await page.locator('#from-bar').focus();
   await page.keyboard.press('[');
   await page.keyboard.press('l');
@@ -81,8 +86,11 @@ test('keyboard shortcuts work in the score without stealing input keys', async (
 test('one-bar loop at 50% wraps repeatedly inside the selected tick range', async ({ page }) => {
   await demo(page);
   await page.locator('#speed').fill('50');
+  await openSection(page, '#passage-tracks');
   await page.locator('#from-bar').selectOption('1');
+  await openSection(page, '#passage-tracks');
   await page.locator('#to-bar').selectOption('1');
+  await openSection(page, '#passage-tracks');
   await page.locator('#select-bars').click();
   await page.locator('#loop').check();
   await expect(page.locator('#range-label')).toContainText('bar 2–2 · looping');
@@ -117,6 +125,7 @@ test('one-bar loop at 50% wraps repeatedly inside the selected tick range', asyn
   expect(samples.some(sample => sample.currentString === '4' && sample.currentFret === '2' && sample.nextString === '5' && sample.nextFret === '2')).toBe(true);
   await page.locator('#stop').click();
   await expect.poll(() => page.locator('#position').evaluate(element => Math.abs(element.value - 3840))).toBeLessThanOrEqual(1);
+  await openSection(page, '#passage-tracks');
   await page.locator('#clear-range').click();
   await expect(page.locator('#range-label')).toContainText('Whole score');
 });
@@ -207,6 +216,7 @@ test('dragging across rendered fret numbers selects a passage', async ({ page })
   await page.mouse.move(next.x + next.width / 2, next.y + next.height / 2, { steps: 12 });
   await page.mouse.up();
   await expect(page.locator('#range-label')).toContainText('Selected: bar');
+  await openSection(page, '#passage-tracks');
   await page.locator('#clear-range').click();
   await expect(page.locator('#range-label')).toContainText('Whole score');
 });

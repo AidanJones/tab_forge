@@ -1,3 +1,4 @@
+import { openSection } from './workflow-helpers.js';
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { importer, Settings } from '@coderline/alphatab';
@@ -9,8 +10,11 @@ test('inline cartoon skeleton diagrams use the hand rig and survive printing wit
   await page.locator('#input').fill('title: Hands for picking\n[Verse - C]\nnote: Let it ring\n3f5s 2f4s 0s3 1f2s\n[Chorus - F]\n1f6s 3f5s 3f4s 2f3s');
   await page.getByRole('button',{name:'Update preview',exact:true}).click();
   await expect(page.locator('#play')).toBeEnabled();
+  await openSection(page, '#score-appearance');
   await expect(page.locator('#score-finger-examples')).toBeDisabled();
+  await openSection(page, '#score-appearance');
   await page.locator('#score-shapes').check();
+  await openSection(page, '#score-appearance');
   await page.locator('#score-finger-examples').check();
   await page.locator('#score-viewport').scrollIntoViewIfNeeded();
   await expect(page.locator('#score .finger-example-diagram').first()).toBeVisible();
@@ -21,6 +25,7 @@ test('inline cartoon skeleton diagrams use the hand rig and survive printing wit
   await expect(page.locator('#score')).not.toContainText('__TAB_FORGE');
   await page.locator('#score-viewport').screenshot({path:'test-results/finger-example-score.png'});
   const download=page.waitForEvent('download');
+  await openSection(page, '#score-exports');
   await page.locator('#save-gp').click();
   const file=await download;
   const score=importer.ScoreLoader.loadScoreFromBytes(await readFile(await file.path()),new Settings());
@@ -28,6 +33,7 @@ test('inline cartoon skeleton diagrams use the hand rig and survive printing wit
   expect([...score.tracks[0].staves[0].chords.values()].every(chord=>!chord.name.includes('__TAB_FORGE'))).toBe(true);
   await page.evaluate(()=>{const original=window.open;window.open=function(...args){const preview=original.apply(window,args);preview.print=()=>{preview.document.documentElement.dataset.printed='true';};return preview;};});
   const opened=page.waitForEvent('popup');
+  await openSection(page, '#score-exports');
   await page.locator('#print-score').click();
   const preview=await opened;
   await expect(preview.locator('.finger-example-skeleton')).toHaveCount(2);
@@ -37,17 +43,21 @@ test('inline cartoon skeleton diagrams use the hand rig and survive printing wit
   await page.locator('#speed').fill('25');
   await page.locator('#play').click();
   const before=await page.locator('#position').evaluate(n=>Number(n.value));
+  await openSection(page, '#score-appearance');
   await page.locator('#score-finger-examples').uncheck();
   await expect(page.locator('#play')).toHaveText('Pause');
   await expect(page.locator('#score .finger-example-diagram')).toHaveCount(0);
   await expect.poll(()=>page.locator('#position').evaluate(n=>Number(n.value))).toBeGreaterThan(before);
+  await openSection(page, '#score-appearance');
   await page.locator('#score-finger-examples').check();
   await expect(page.locator('#play')).toHaveText('Pause');
   await page.locator('#score-viewport').scrollIntoViewIfNeeded();
   await expect(page.locator('#score .finger-example-skeleton')).toHaveCount(2);
   await page.locator('#stop').click();
   await page.goto('/practice.html');
+  await openSection(page, '#score-appearance');
   await expect(page.locator('#score-shapes')).toBeChecked();
+  await openSection(page, '#score-appearance');
   await expect(page.locator('#score-finger-examples')).toBeChecked();
   expect(errors).toEqual([]);
 });
@@ -62,12 +72,16 @@ test('written alternative fingerings produce different examples for the same cho
   const { exporter }=await import('@coderline/alphatab');
   await page.setViewportSize({width:390,height:844});
   await page.goto('/practice.html');
-  await page.locator('#score-shapes').check();
-  await page.locator('#score-finger-examples').check();
   await page.locator('#file').setInputFiles({name:'variants.gp',mimeType:'application/octet-stream',buffer:Buffer.from(new exporter.Gp7Exporter().export(score,settings))});
   await expect(page.locator('#play')).toBeEnabled();
+  await openSection(page, '#score-appearance');
+  await page.locator('#score-shapes').check();
+  await openSection(page, '#score-appearance');
+  await page.locator('#score-finger-examples').check();
   await page.locator('#score-viewport').scrollIntoViewIfNeeded();
   const diagrams=page.locator('#score .finger-example-diagram');
+  // alphaTab renders off-screen systems lazily; visit the second system too.
+  await page.locator('#score-viewport').evaluate(node=>{node.scrollTop=node.scrollHeight;});
   await expect(diagrams).toHaveCount(2);
   await expect(page.locator('#score .finger-example-skeleton')).toHaveCount(2);
   expect(await diagrams.nth(0).locator('text').allTextContents()).toContain('1');
@@ -84,7 +98,9 @@ test('G/B has coloured pressing fingers, faded resting fingers and a tight right
   await page.locator('#input').fill('title: G/B fingers\n[Verse - G/B]\n2f5s 0s4 3f2s 3f1s');
   await page.getByRole('button',{name:'Update preview',exact:true}).click();
   await expect(page.locator('#play')).toBeEnabled();
+  await openSection(page, '#score-appearance');
   await page.locator('#score-shapes').check();
+  await openSection(page, '#score-appearance');
   await page.locator('#score-finger-examples').check();
   await page.locator('#score-viewport').scrollIntoViewIfNeeded();
   const diagram=page.locator('#score .finger-example-diagram');

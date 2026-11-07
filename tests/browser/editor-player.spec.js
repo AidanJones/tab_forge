@@ -1,3 +1,4 @@
+import { openSection } from './workflow-helpers.js';
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { importer, Settings } from '@coderline/alphatab';
@@ -11,6 +12,7 @@ test('editor lesson notes render a playable score and live finger guide', async 
   await expect(page.locator('#play')).toBeEnabled();
   await expect(page.locator('#score-title')).toHaveText('My playable riff');
   await expect(page.locator('#editor-playback-status')).toContainText('3 notes/chords');
+  await openSection(page, '#hand-guide-settings');
   await expect(page.locator('#finger-notes')).toContainText('String 1 · fret 3');
   await page.locator('#speed').fill('50');
   await page.locator('#play').click();
@@ -22,6 +24,7 @@ test('editor lesson notes render a playable score and live finger guide', async 
   await page.getByRole('button', { name: 'Update preview', exact: true }).click();
   await expect(page.locator('#play')).toBeEnabled();
   await expect(page.locator('#score-title')).toHaveText('Changed riff');
+  await openSection(page, '#hand-guide-settings');
   await expect(page.locator('#finger-notes')).toContainText('String 3 · fret 0');
   await page.locator('#editor-duration').selectOption('8');
   await expect(page.locator('#editor-playback-status')).toContainText('eighth note each');
@@ -49,6 +52,7 @@ test('creator saves playable Guitar Pro, alphaTex, MIDI and original lesson note
   await page.getByRole('button', { name: 'Update preview', exact: true }).click();
   await expect(page.locator('#save-gp')).toBeEnabled();
   const gpDownload = page.waitForEvent('download');
+  await openSection(page, '#score-exports');
   await page.locator('#save-gp').click();
   const gp = await gpDownload;
   expect(gp.suggestedFilename()).toBe('Exported riff.gp');
@@ -57,11 +61,13 @@ test('creator saves playable Guitar Pro, alphaTex, MIDI and original lesson note
   expect(score.subTitle).toContain('Draft rhythm');
   expect(score.tracks[0].staves[0].bars[0].voices[0].beats[2].notes).toHaveLength(2);
   const texDownload = page.waitForEvent('download');
+  await openSection(page, '#score-exports');
   await page.locator('#save-alphatex').click();
   const tex = await texDownload;
   expect(tex.suggestedFilename()).toBe('Exported riff.alphatex');
   expect(importer.ScoreLoader.loadAlphaTex(await readFile(await tex.path(), 'utf8'), new Settings()).title).toBe('Exported riff');
   const midiDownload = page.waitForEvent('download');
+  await openSection(page, '#score-exports');
   await page.locator('#save-midi').click();
   const midi = await midiDownload;
   expect(midi.suggestedFilename()).toBe('Exported riff.mid');

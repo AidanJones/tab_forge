@@ -153,7 +153,7 @@ note: Start slowly
 
             // Update URL with encoded input
             const encoded = encodeURIComponent(input);
-            const newUrl = `${window.location.pathname}?tab=${encoded}`;
+            const newUrl = `${window.location.pathname}?tab=${encoded}${window.location.hash}`;
             window.history.replaceState({}, '', newUrl);
         }
 
@@ -216,6 +216,7 @@ note: This is an ascending pattern through the G chord
 "One more time"
 note: End with a nice arpeggio`;
 
+            document.dispatchEvent(new CustomEvent('tab-forge:before-replace', { detail: document.getElementById('input').value }));
             document.getElementById('input').value = example;
             updateOutput();
         }

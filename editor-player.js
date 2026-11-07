@@ -11,10 +11,9 @@ root.querySelector('#empty-state h3').textContent = 'Hear the notes you write.';
 root.querySelector('#empty-state p').textContent = 'Write a few notes or load an example, then update the preview.';
 root.querySelector('#empty-state .muted').textContent = 'The score and finger guide will appear here.';
 const player = mountPractice(root, { embedded: true });
-// These microphone tools also work before a lesson has been written/updated.
-root.before(root.querySelector('#guitar-tuner'));
 document.addEventListener('tab-forge:exercise', event => {
   const input=document.getElementById('input');
+  document.dispatchEvent(new CustomEvent('tab-forge:before-replace',{detail:input.value}));
   input.value=event.detail.lesson;
   input.dispatchEvent(new Event('input',{bubbles:true}));
   document.getElementById('editor-tempo').value=80;

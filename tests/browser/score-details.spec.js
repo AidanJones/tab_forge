@@ -1,3 +1,4 @@
+import { openSection } from './workflow-helpers.js';
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { importer, Settings } from '@coderline/alphatab';
@@ -19,13 +20,17 @@ test('the single new score shows top chord diagrams, instructions and lyrics and
   await expect(page.locator('#output,.tab-line,.printable-sheet')).toHaveCount(0);
   await expect(page.locator('#score')).toContainText('Softly, let it ring');
   await expect(page.locator('#score')).toContainText('Take');
+  await openSection(page, '#score-appearance');
   await expect(page.locator('#score-chords')).toBeChecked();
   await expect(page.locator('#score')).toContainText('Am'); // Defined library, even when only C is played.
   const textPositions=await page.locator('#score svg text').evaluateAll(nodes=>nodes.map(n=>({text:n.textContent,y:n.getBoundingClientRect().y})));
   expect(Math.min(...textPositions.filter(n=>n.text==='C').map(n=>n.y))).toBeLessThan(textPositions.find(n=>n.text==='Softly, let it ring').y);
+  await openSection(page, '#score-appearance');
   await page.locator('#score-shapes').check();
+  await openSection(page, '#score-appearance');
   await expect(page.locator('#shape-hint-status')).not.toContainText('suggested grip');
   const download=page.waitForEvent('download');
+  await openSection(page, '#score-exports');
   await page.locator('#save-gp').click();
   const file=await download;
   const score=importer.ScoreLoader.loadScoreFromBytes(await readFile(await file.path()),new Settings());
@@ -45,6 +50,7 @@ test('the single new score shows top chord diagrams, instructions and lyrics and
     };
   });
   const opened=page.waitForEvent('popup');
+  await openSection(page, '#score-exports');
   await page.locator('#print-score').click();
   const printView=await opened;
   await expect(printView.locator('svg').first()).toBeVisible();
@@ -62,11 +68,15 @@ test('the single new score shows top chord diagrams, instructions and lyrics and
 
 test('optional suggested grips are shared across pages, keep playback running and stay out of exports',async({page})=>{
   await edit(page,'title: Unlabelled picking\n[Verse]\n3f5s 2f4s 0s3 1f2s');
+  await openSection(page, '#score-appearance');
   await expect(page.locator('#score-shapes')).not.toBeChecked();
+  await openSection(page, '#score-appearance');
   await page.locator('#score-shapes').check();
+  await openSection(page, '#score-appearance');
   await expect(page.locator('#shape-hint-status')).toContainText('1 suggested grip');
   await expect(page.locator('#score')).toContainText('C shape (suggested)');
   const download=page.waitForEvent('download');
+  await openSection(page, '#score-exports');
   await page.locator('#save-gp').click();
   const file=await download;
   const score=importer.ScoreLoader.loadScoreFromBytes(await readFile(await file.path()),new Settings());
@@ -75,19 +85,25 @@ test('optional suggested grips are shared across pages, keep playback running an
   await page.locator('#play').click();
   await expect(page.locator('#play')).toHaveText('Pause');
   const before=await page.locator('#position').evaluate(n=>Number(n.value));
+  await openSection(page, '#score-appearance');
   await page.locator('#score-shapes').uncheck();
   await expect(page.locator('#play')).toHaveText('Pause');
   await expect.poll(()=>page.locator('#position').evaluate(n=>Number(n.value))).toBeGreaterThan(before);
   await page.locator('#stop').click();
+  await openSection(page, '#score-appearance');
   await page.locator('#score-shapes').check();
   await page.goto('/practice.html');
+  await openSection(page, '#score-appearance');
   await expect(page.locator('#score-shapes')).toBeChecked();
   await page.locator('#file').setInputFiles({name:'picking.alphatex',mimeType:'text/plain',buffer:Buffer.from('\\tuning E4 B3 G3 D3 A2 E2 . 3.5 2.4 0.3 1.2 |')});
   await expect(page.locator('#play')).toBeEnabled();
   await page.locator('#score-viewport').scrollIntoViewIfNeeded();
+  await openSection(page, '#score-appearance');
   await expect(page.locator('#shape-hint-status')).toContainText('1 suggested grip');
   await expect(page.locator('#score')).toContainText('C shape (suggested)');
+  await openSection(page, '#score-appearance');
   await page.locator('#score-chords').uncheck();
   await page.reload();
+  await openSection(page, '#score-appearance');
   await expect(page.locator('#score-chords')).not.toBeChecked();
 });
