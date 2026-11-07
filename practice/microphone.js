@@ -1,11 +1,11 @@
-import { detectPitch, StablePitch } from './pitch.js';
+import { detectPitch, StablePitch, DEFAULT_NOISE_FLOOR } from './pitch.js';
 
 export class MicrophonePitch {
   constructor(onChange) {
     this.onChange = onChange;
     this.request = 0;
     this.stable = new StablePitch();
-    this.noiseFloor = 0.003;
+    this.noiseFloor = DEFAULT_NOISE_FLOOR;
   }
   emit(state, extra = {}) { this.onChange({ state, ...extra }); }
   async start(deviceId = '') {
@@ -28,6 +28,10 @@ export class MicrophonePitch {
       }, video: false });
       if (request !== this.request) { stream.getTracks().forEach(track => track.stop()); return; }
       this.stream = stream;
+      // Device/permission changes can suspend the context after the initial
+      // user-gesture resume. Resume again once capture has been established.
+      await context.resume();
+      if (request !== this.request) return;
       const track = stream.getAudioTracks()[0];
       if (!track || track.readyState === 'ended') throw new Error('Microphone disconnected. Choose an input and try again.');
       track.addEventListener('ended', () => {
@@ -38,11 +42,20 @@ export class MicrophonePitch {
       analyser.fftSize = 8192;
       this.source.connect(analyser); // Deliberately no connection to speakers.
       const samples = new Float32Array(analyser.fftSize);
-      this.emit('listening');
+      const inputName = track.label || 'Selected microphone';
+      this.emit('listening', { inputName, signal:'starting' });
       this.timer = setInterval(() => {
+        const blocked = context.state !== 'running' ? 'suspended' : track.muted || !track.enabled ? 'muted' : '';
+        if (blocked) {
+          this.stable.reset();
+          this.emit('listening', { inputName, signal:blocked, rms:0 });
+          return;
+        }
         analyser.getFloatTimeDomainData(samples);
         const raw = detectPitch(samples, context.sampleRate, { noiseFloor: this.noiseFloor });
-        this.emit('listening', { reading: this.stable.update(raw), rms: raw.rms });
+        const reading = this.stable.update(raw);
+        const signal = reading ? 'detected' : raw.frequency ? 'settling' : raw.rms < 1e-5 ? 'silent' : raw.rms < this.noiseFloor ? 'quiet' : 'unclear';
+        this.emit('listening', { inputName, signal, reading, candidate:raw.frequency ? raw : null, rms:raw.rms });
       }, 60);
     } catch (error) {
       stream?.getTracks().forEach(track => track.stop());
@@ -55,6 +68,9 @@ export class MicrophonePitch {
         : error.message || 'Could not start the microphone. Try again.';
       this.emit('error', { message });
     }
+  }
+  async resumeAudio() {
+    try { await this.context?.resume(); } catch { /* The signal status shows whether resuming succeeded. */ }
   }
   stop(message = '') {
     ++this.request;

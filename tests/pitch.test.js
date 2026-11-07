@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { detectPitch, centsBetween, midiFrequency, pitchNote, StablePitch } from '../practice/pitch.js';
+import { detectPitch, centsBetween, midiFrequency, pitchNote, StablePitch, signalDb } from '../practice/pitch.js';
 
 const tone=(frequency,rate=48000,amplitude=.2)=>Float32Array.from({length:8192},(_,i)=>amplitude*(Math.sin(2*Math.PI*frequency*i/rate)+.45*Math.sin(4*Math.PI*frequency*i/rate)+.2*Math.sin(6*Math.PI*frequency*i/rate))+.01);
 test('pitch detector resolves guitar/bass fundamentals with overtones and a DC offset at common sample rates',()=>{
@@ -24,4 +24,15 @@ test('stable readings need repeated agreement, reset on silence and identify sig
   assert.equal(pitchNote(440).name,'A');assert.equal(pitchNote(440).octave,4);
   assert(Math.abs(pitchNote(440*2**(15/1200)).cents-15)<1e-8);
   assert(Math.abs(pitchNote(440*2**(-15/1200)).cents+15)<1e-8);
+});
+
+test('quiet microphone notes pass the default gate while background-level signals remain gated',()=>{
+  const quiet=tone(110,48000,.001);
+  assert.equal(detectPitch(quiet,48000,{noiseFloor:.003}).frequency,null);
+  const detected=detectPitch(quiet,48000);
+  assert(Math.abs(centsBetween(detected.frequency,110))<5);
+  assert(signalDb(detected.rms)>-65 && signalDb(detected.rms)<-50);
+  assert.equal(signalDb(0),-100);
+  assert.equal(signalDb(.001),-60);
+  assert.equal(detectPitch(tone(110,48000,.0001),48000).frequency,null);
 });

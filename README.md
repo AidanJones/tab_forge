@@ -17,6 +17,12 @@ or another input after access is granted. Use headphones, mute the unused string
 and pluck one string at a time. The chromatic tuner shows the detected note,
 frequency, signed cents and flat/in-tune/sharp guidance (A4 = 440 Hz, ±5 cents).
 You can select a standard-tuning target string or adjust the quiet-sound gate.
+The input meter uses a decibel scale so quiet laptop-microphone audio is visible.
+The default gate is −65 dB and can be lowered to −85 dB for very soft signals.
+Status messages distinguish no signal, muted capture, sound below the gate,
+unclear pitch and paused browser audio. The actual microphone name is shown;
+switch Input while listening to try the laptop mic, or use **Resume audio** if
+browser audio is suspended.
 The microphone is analysed locally, never recorded/uploaded or routed to the
 speakers. Stop, collapsing the tools, hiding the page or leaving it releases the
 microphone; starting again is explicit. Browsers require localhost or HTTPS.

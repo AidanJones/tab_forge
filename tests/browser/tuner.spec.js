@@ -3,9 +3,11 @@ import { test, expect } from '@playwright/test';
 async function fakeMicrophone(page, mode='tone') {
   await page.addInitScript(mode=>{
     window.micRequests=[];window.micStops=0;
+    const mediaSource=AudioContext.prototype.createMediaStreamSource;
+    AudioContext.prototype.createMediaStreamSource=function(...args){window.analysisContext=this;return mediaSource.apply(this,args);};
     const stream=async()=>{
       const context=new AudioContext(),oscillator=context.createOscillator(),gain=context.createGain(),destination=context.createMediaStreamDestination();
-      oscillator.frequency.value=110;gain.gain.value=.2;oscillator.connect(gain);gain.connect(destination);oscillator.start();await context.resume();
+      oscillator.frequency.value=110;gain.gain.value=mode==='silent'?0:mode==='quiet'?.001:.2;oscillator.connect(gain);gain.connect(destination);oscillator.start();await context.resume();
       window.testPitch=(frequency,amplitude=.2)=>{oscillator.frequency.value=frequency;gain.gain.value=amplitude;};
       for(const track of destination.stream.getTracks()){
         const stop=track.stop.bind(track);track.stop=()=>{++window.micStops;stop();context.close().catch(()=>{});};
@@ -99,4 +101,37 @@ test('a late permission response after cancel immediately stops its stream',asyn
   await page.evaluate(()=>window.resolveMicrophone());
   await expect.poll(()=>page.evaluate(()=>window.micStops)).toBe(1);
   await expect(page.locator('#guitar-tuner')).toHaveAttribute('data-state','idle');
+});
+
+test('quiet notes register on a readable meter and an adjustable gate explains rejection',async({page})=>{
+  await fakeMicrophone(page,'quiet');await page.goto('/practice.html');
+  await page.locator('#guitar-tuner summary').click();await page.getByRole('button',{name:'Start microphone',exact:true}).click();
+  await expect(page.locator('.tuner-note')).toHaveText('A2');
+  await expect(page.locator('.tuner-guidance')).toHaveText('In tune');
+  await expect.poll(()=>page.getByLabel('Microphone level').evaluate(n=>n.value)).toBeGreaterThan(-70);
+  await page.getByLabel('Microphone noise floor').fill('-50');
+  await expect(page.locator('.tuner-status')).toContainText('below the noise gate');
+  await expect(page.locator('.tuner-note')).toHaveText('—');
+  await page.getByLabel('Microphone noise floor').fill('-65');
+  await expect(page.locator('.tuner-guidance')).toHaveText('In tune');
+  await page.locator('#guitar-tuner').screenshot({path:'test-results/tuner-quiet-signal.png'});
+});
+
+test('zero input and suspended capture have actionable feedback, and the live microphone can be changed',async({page})=>{
+  await fakeMicrophone(page,'silent');await page.goto('/practice.html');
+  await page.locator('#guitar-tuner summary').click();await page.getByRole('button',{name:'Start microphone',exact:true}).click();
+  await expect(page.locator('.tuner-status')).toContainText('No audio reaching the tuner');
+  await expect(page.getByLabel('Microphone level')).toHaveJSProperty('value',-90);
+  await page.getByLabel('Tuner microphone').selectOption('laptop');
+  await expect.poll(()=>page.evaluate(()=>window.micRequests.length)).toBe(2);
+  await expect(page.locator('#guitar-tuner')).toHaveAttribute('data-state','listening');
+  expect(await page.evaluate(()=>window.micRequests[1].audio.deviceId)).toEqual({exact:'laptop'});
+  await page.evaluate(()=>window.testPitch(110,.001));
+  await expect(page.locator('.tuner-guidance')).toHaveText('In tune');
+  await page.evaluate(()=>window.analysisContext.suspend());
+  await expect(page.locator('.tuner-status')).toContainText('Browser audio is paused');
+  await page.getByRole('button',{name:'Resume audio',exact:true}).click();
+  await expect(page.locator('.tuner-guidance')).toHaveText('In tune');
+  await page.getByRole('button',{name:'Stop microphone',exact:true}).click();
+  expect(await page.evaluate(()=>window.micStops)).toBe(2);
 });

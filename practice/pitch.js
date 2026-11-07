@@ -1,6 +1,10 @@
 // Monophonic YIN-style difference/normalisation, independent of browser APIs so
 // the same detector can later feed note-by-note practice as well as the tuner.
-export function detectPitch(input, sampleRate, { noiseFloor = 0.003, minHz = 35, maxHz = 1400 } = {}) {
+export const DEFAULT_NOISE_DB = -65;
+export const DEFAULT_NOISE_FLOOR = 10 ** (DEFAULT_NOISE_DB / 20);
+export const signalDb = rms => Math.max(-100, Math.min(0, 20 * Math.log10(rms || 1e-5)));
+
+export function detectPitch(input, sampleRate, { noiseFloor = DEFAULT_NOISE_FLOOR, minHz = 35, maxHz = 1400 } = {}) {
   const step = Math.max(1, Math.floor(sampleRate / 24000));
   const length = Math.floor(input.length / step);
   const samples = new Float32Array(length);
