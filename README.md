@@ -11,6 +11,21 @@ available for existing lesson files.
 
 ## Browser practice
 
+Choose **Play-along** above the score in the editor or Practice page for scrolling
+string lanes. Play a note as its fret number crosses the fixed **PLAY NOW** line.
+Small coloured numbers suggest fretting fingers; chord names, playing instructions
+and written up/down brush or pick strokes appear above the lanes. Sustains trail
+the notes and tied notes use a hold symbol. The look-ahead control changes how
+many quarter-note beats are visible. The same transport controls speed, loops,
+track selection, browser sound and USB MIDI in either view. This is a timing guide;
+it does not detect or grade what you play.
+
+Design references reviewed: [PickHero's scrolling lanes and timeline](https://github.com/Artemarius/PickHero/tree/main/pickhero),
+[TuxGuitar](https://github.com/helge17/tuxguitar/) and
+[MyTabs](https://github.com/louislam/its-mytabs). The browser renderer here is an
+original implementation using alphaTab's generated repeat-aware tick lookup and
+existing playback clock; no code or artwork from those projects was copied.
+
 Requires Node.js 22.12+ and pnpm (or npm).
 
 ```powershell

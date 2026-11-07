@@ -3,10 +3,19 @@ import { formatTime, isTypingTarget } from './transport.js';
 import { Fretboard } from './fretboard.js';
 import { MidiOutput } from './midi-output.js';
 import { download, scoreFilename } from './download.js';
+import { PlayAlong } from './play-along.js';
 
 export function mountPractice(root = document, { embedded = false } = {}) {
   const $ = id => root.querySelector(`#${id}`);
   const fretboard = new Fretboard($('finger-guide'));
+  const playAlong = new PlayAlong($('play-along'));
+  for (const button of root.querySelectorAll('[data-player-view]')) button.addEventListener('click', () => {
+    const scrolling = button.dataset.playerView === 'scrolling';
+    $('play-along').hidden = !scrolling;
+    $('score-viewport').hidden = scrolling;
+    for (const other of root.querySelectorAll('[data-player-view]')) other.setAttribute('aria-pressed', String(other === button));
+    playAlong.setVisible(scrolling);
+  });
   let player;
   let pendingPlayer;
   let localError = '';
@@ -139,6 +148,10 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     latest = state;
     midi.setVolume(state.volume);
     fretboard.update(state.fingering);
+    playAlong.update(state);
+    $('play-along-play').disabled = !state.ready;
+    $('play-along-stop').disabled = !state.ready;
+    $('play-along-play').textContent = state.playing ? 'Pause scrolling' : 'Play scrolling';
     $('score-title').textContent = state.title;
     $('score-artist').textContent = state.artist;
     $('source-label').textContent = state.source || 'Your practice space';
@@ -289,6 +302,8 @@ export function mountPractice(root = document, { embedded = false } = {}) {
   }));
 
   $('play').addEventListener('click', () => run(() => player.playPause()));
+  $('play-along-play').addEventListener('click', () => run(() => player.playPause()));
+  $('play-along-stop').addEventListener('click', () => run(() => player.stop()));
   $('print-score').addEventListener('click', () => run(() => player.printScore()));
   for (const [id, format, type] of [['save-gp', 'gp', 'application/octet-stream'], ['save-alphatex', 'alphatex', 'text/plain;charset=utf-8'], ['save-midi', 'mid', 'audio/midi']]) {
     $(id).addEventListener('click', () => run(() => {

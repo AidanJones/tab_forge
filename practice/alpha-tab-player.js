@@ -3,6 +3,7 @@ import { rangeForBars, sameRange, snapRangeToBars, speedPercent } from './transp
 import { suggestFingering } from './fingering.js';
 import { addSuggestedShapes, removeSuggestedShapes, scoreForExport } from './chord-hints.js';
 import { addFingerExamples } from './finger-examples.js';
+import { playAlongTimeline } from './play-along-timeline.js';
 import { FINGER_EXAMPLE_ENGINE, registerFingerExampleRenderer } from './finger-example-renderer.js';
 
 export const SUPPORTED_FILES = /\.(gp[345]?|gpx|xml|musicxml|mxl|tex|alphatex)$/i;
@@ -112,6 +113,7 @@ export class PracticePlayer {
       volume: this.volume,
       selectedTrack: this.selectedTrack,
       fingering: this.fingeringView,
+      timeline: this.playAlongView,
       tracks: (score?.tracks ?? []).map(track => ({
         index: track.index, name: track.name || `Track ${track.index + 1}`,
         muted: track.playbackInfo.isMute, solo: track.playbackInfo.isSolo,
@@ -120,6 +122,7 @@ export class PracticePlayer {
       position: {
         currentTime: this.position.currentTime, endTime: this.api.endTime,
         currentTick: this.position.currentTick, endTick: this.api.endTick,
+        tempo: this.position.originalTempo,
       },
     };
   }
@@ -129,6 +132,7 @@ export class PracticePlayer {
   }
 
   prepareFingering() {
+    this.timelineKey = null;
     this.fingerPlan = new WeakMap();
     for (const track of this.api.score?.tracks ?? []) {
       for (const staff of track.staves) {
@@ -152,6 +156,16 @@ export class PracticePlayer {
         }));
       }
     }
+  }
+
+  get playAlongView() {
+    const track = this.api.score?.tracks[this.selectedTrack];
+    const key = [track, this.api.tickCache, this.fingerPlan, this.scoreDisplay.shapeHints, this.scoreDisplay.fingerExamples];
+    if (!this.timelineKey || key.some((value, i) => value !== this.timelineKey[i])) {
+      this.timelineKey = key;
+      this.timeline = playAlongTimeline(track, this.api.tickCache, this.fingerPlan);
+    }
+    return this.timeline;
   }
 
   get fingeringView() {

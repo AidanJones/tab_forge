@@ -32,3 +32,12 @@ export function formatTime(milliseconds) {
 export function isTypingTarget(target) {
   return Boolean(target?.closest('input, textarea, select, button, a, [contenteditable]:not([contenteditable="false"])'));
 }
+// Between audio position events only interpolate briefly; a delayed clock or
+// count-in must never let the visual run ahead indefinitely.
+export function playAlongTick(state, elapsed = 0) {
+  const tick = state.position.currentTick;
+  if (!state.playing) return tick;
+  const delta = Math.min(120, Math.max(0, elapsed)) * (state.position.tempo || 120) * 960 / 60000 * state.speed / 100;
+  const end = state.looping && state.range ? state.range.endTick : state.position.endTick;
+  return Math.min(end || tick, tick + delta);
+}

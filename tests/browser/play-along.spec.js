@@ -1,0 +1,89 @@
+import { test, expect } from '@playwright/test';
+import { importer, exporter, Settings } from '@coderline/alphatab';
+
+async function loadSong(page) {
+  const settings=new Settings();
+  const score=importer.ScoreLoader.loadAlphaTex('\\title "Scrolling practice" \\tempo 90 \\tuning E4 B3 G3 D3 A2 E2 \\chord ("C" 0 1 0 2 3 x) . :4 (0.1 1.2 0.3 2.4 3.5){ch "C"} 3.5 2.4 0.3 | 1.2 0.1 1.2 0.1 | 3.5 2.4 0.3 1.2 |',settings);
+  const beat=score.tracks[0].staves[0].bars[0].voices[0].beats[0];
+  beat.brushType=2;beat.text='Let it ring';
+  score.tracks[0].staves[0].bars[1].voices[0].beats[0].pickStroke=1;
+  await page.locator('#file').setInputFiles({name:'scroll.gp',mimeType:'application/octet-stream',buffer:Buffer.from(new exporter.Gp7Exporter().export(score,settings))});
+  await expect(page.locator('#play')).toBeEnabled();
+  await page.getByRole('button',{name:'Play-along',exact:true}).click();
+}
+
+test('scrolling cues share playback, pause, seek, speed and view changes',async({page})=>{
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('/practice.html');await loadSong(page);
+  const view=page.locator('#play-along');
+  await expect(view).toBeVisible();await expect(page.locator('#score-viewport')).toBeHidden();
+  await expect(view.locator('svg')).toContainText('C');
+  await expect(view.locator('svg')).toContainText('↓ down');
+  await expect(view.locator('svg')).toContainText('↑ up');
+  await expect(view.locator('svg')).toContainText('Let it ring');
+  await expect(view.locator('.play-now-line')).toHaveCount(1);
+  await page.locator('#play-along').scrollIntoViewIfNeeded();
+  await view.screenshot({path:'test-results/play-along-desktop.png'});
+  await page.locator('#speed').fill('50');await page.locator('#play').click();
+  await expect.poll(async()=>Number(await view.getAttribute('data-tick'))).toBeGreaterThan(500);
+  await page.locator('#play').click();
+  const paused=await view.getAttribute('data-tick');
+  await page.waitForTimeout(300);expect(await view.getAttribute('data-tick')).toBe(paused);
+  await page.locator('#from-bar').selectOption('1');
+  await page.locator('#to-bar').selectOption('1');
+  await page.locator('#select-bars').click();
+  await expect.poll(async()=>Number(await view.getAttribute('data-tick'))).toBeGreaterThanOrEqual(3840);
+  await page.locator('#loop').check();
+  await expect(view.locator('.highway-event').first()).toHaveAttribute('data-start','3840');
+  await page.locator('#clear-range').click();await page.locator('#loop').uncheck();
+  await page.locator('#stop').click();
+  await expect.poll(async()=>Number(await view.getAttribute('data-tick'))).toBeLessThanOrEqual(1);
+  await page.getByRole('button',{name:'Score',exact:true}).click();
+  await expect(page.locator('#score-viewport')).toBeVisible();await expect(view).toBeHidden();
+  await page.getByRole('button',{name:'Play-along',exact:true}).click();
+  await page.locator('#play-along-play').click();
+  await expect(page.locator('#play')).toHaveText('Pause');
+  await page.getByRole('button',{name:'Score',exact:true}).click();
+  await expect(page.locator('#play')).toHaveText('Pause');
+  await page.getByRole('button',{name:'Play-along',exact:true}).click();
+  await page.locator('#play-along-stop').click();
+  await page.locator('#score-shapes').check();await page.locator('#score-finger-examples').check();
+  await expect(view).not.toContainText('__TAB_FORGE');
+  expect(errors).toEqual([]);
+});
+
+test('track changes rebuild lanes and loop playback stays inside the selected bar',async({page})=>{
+  await page.goto('/practice.html');
+  await page.locator('#demo').click();await expect(page.locator('#play')).toBeEnabled();
+  await page.getByRole('button',{name:'Play-along',exact:true}).click();
+  await expect(page.locator('#play-along svg')).toContainText('E4');
+  await page.locator('#track').selectOption('1');
+  await expect(page.locator('#play-along svg')).toContainText('E1');
+  await expect(page.locator('#play-along svg')).not.toContainText('E4');
+  await page.locator('#from-bar').selectOption('1');await page.locator('#to-bar').selectOption('1');
+  await page.locator('#select-bars').click();await page.locator('#loop').check();
+  await page.locator('#speed').fill('100');
+  await page.locator('#play-along-play').click();
+  await expect.poll(async()=>Number(await page.locator('#play-along').getAttribute('data-tick'))).toBeGreaterThan(6500);
+  await expect.poll(async()=>Number(await page.locator('#play-along').getAttribute('data-tick'))).toBeLessThan(5000);
+  await expect(page.locator('#play-along .highway-event').first()).toHaveAttribute('data-start','3840');
+  await page.locator('#play-along-stop').click();
+});
+
+test('editor play-along is readable on mobile and updates with the lesson',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto('/index.html');
+  await page.locator('#input').fill('title: Scrolling lesson\n[Verse - G/B]\nnote: Play softly\n2f5s 0s4 3f2s 3f1s');
+  await page.getByRole('button',{name:'Update preview',exact:true}).click();
+  await expect(page.locator('#play')).toBeEnabled();
+  await page.getByRole('button',{name:'Play-along',exact:true}).click();
+  await expect(page.locator('#play-along svg')).toContainText('G/B');
+  await page.getByLabel('Play-along look ahead').selectOption('4');
+  await page.locator('#play-along').scrollIntoViewIfNeeded();
+  await page.locator('#play-along').screenshot({path:'test-results/play-along-mobile.png'});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await page.locator('#input').fill('title: Replacement\n[Chorus - C]\n3f5s 2f4s 0s3 1f2s');
+  await page.getByRole('button',{name:'Update preview',exact:true}).click();
+  await expect(page.locator('#play-along svg')).toContainText('C');
+  await expect(page.locator('#play-along svg')).not.toContainText('G/B');
+});

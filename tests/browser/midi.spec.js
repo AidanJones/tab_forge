@@ -51,6 +51,7 @@ test('played score events reach the selected USB MIDI output and Stop releases t
   await page.locator('#to-bar').selectOption('0');
   await page.locator('#select-bars').click();
   await page.locator('#loop').check();
+  await page.getByRole('button', { name: 'Play-along', exact: true }).click();
   await page.locator('#play').click();
   await expect.poll(() => page.evaluate(() => window.midiMessages.filter(message => message.bytes[0] === 0x92).length)).toBeGreaterThan(0);
   const notes = await page.evaluate(() => window.midiMessages.filter(message => message.bytes[0] === 0x92));
