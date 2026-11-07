@@ -97,6 +97,24 @@
         <p class="midi-help">Sends the displayed track on the chosen channel. Select a sound on the FM1; patches and MIDI clock are left unchanged. Pitch-bend effects are not sent.</p>
         <p class="midi-help">Stock FM1: this is live playback, not a sequencer upload. Save MIDI exports a standard song file for compatible software; stock FM1 song-file import is not verified.</p>
       </details>
+      <details id="guitar-tuner" class="guitar-tuner">
+        <summary>Tuner, chord trainer &amp; scales · microphone</summary>
+        <p>Use headphones, pluck one string at a time and let it ring. Mute the other strings. Audio is analysed locally; it is not recorded or uploaded.</p>
+        <div class="tuner-controls"><button type="button" class="tuner-start">Start microphone</button><button type="button" class="tuner-stop" disabled>Stop microphone</button><label>Input <select class="tuner-input" aria-label="Tuner microphone"><option value="">System default</option></select></label><label>Target <select class="tuner-target" aria-label="Tuner target"><option value="0">Automatic / chromatic</option><option value="40">6 · Low E2</option><option value="45">5 · A2</option><option value="50">4 · D3</option><option value="55">3 · G3</option><option value="59">2 · B3</option><option value="64">1 · High E4</option></select></label></div>
+        <p class="tuner-status" role="status">Microphone off.</p>
+        <div class="tuner-display"><strong class="tuner-note">—</strong><span class="tuner-frequency">Pluck a single string</span><strong class="tuner-guidance">Ready to tune</strong><span class="tuner-cents">—</span></div>
+        <div class="tuner-meter" aria-hidden="true"><span class="tuner-centre"></span><span class="tuner-needle" hidden></span></div><div class="tuner-meter-labels"><span>♭ Flat</span><span>In tune · ±5 cents</span><span>Sharp ♯</span></div>
+        <div class="tuner-controls"><label>Input level <meter class="tuner-level" min="0" max="1" value="0" aria-label="Microphone level"></meter></label><label>Ignore quiet sounds <input class="tuner-floor" type="range" min="-65" max="-25" step="1" value="-50" aria-label="Microphone noise floor"></label></div>
+        <span class="tuner-announcement sr-only" aria-live="polite"></span>
+        <section class="independent-trainers" aria-label="Chord and scale trainer">
+          <h3>Make time for the basics</h3>
+          <div class="tuner-controls"><label>Practice <select class="trainer-mode" aria-label="Trainer mode"><option value="chord">Chord check</option><option value="scale">Scale trainer</option></select></label><label><input class="trainer-listen" type="checkbox"> Check notes with microphone</label><button type="button" class="trainer-reset">Reset checks</button></div>
+          <div class="trainer-chord-panel"><label>Chord <select class="trainer-chord" aria-label="Training chord"></select></label><div class="trainer-chord-layout"><svg class="trainer-chord-diagram" viewBox="0 0 200 190" role="img" aria-label="Chord shape, low E on the left"></svg><p>Hold the whole chord, then pick its sounding strings from low to high. The checker waits for each correct note before moving on. A × string should stay muted. Once all notes pass, strum and listen for a clear chord.<br>Checks individual pitches, not a whole strummed chord or which fingers you used. Standard tuning, no capo.</p></div></div>
+          <div class="trainer-scale-panel" hidden><div class="tuner-controls"><label>Key <select class="trainer-root" aria-label="Scale key"></select></label><label>Scale <select class="trainer-scale" aria-label="Scale type"></select></label><label>Direction <select class="trainer-direction" aria-label="Scale direction"><option value="both">Up and down</option><option value="up">Ascending</option><option value="down">Descending</option></select></label><button type="button" class="trainer-load">Load scale tab</button></div><p class="trainer-scale-description"></p><p>In the editor, loading a scale replaces the current lesson notes. Save any lesson you want to keep first.</p></div>
+          <p class="trainer-next" role="status"></p><p class="trainer-progress"></p><div class="trainer-sequence" aria-label="Practice sequence: fret / string"></div>
+          <p>Start the microphone above and enable checking to practise at your own pace. Pluck each note clearly; the highlighted step waits for you. Sequence labels are fret / string. You can generate scale tabs without a microphone.</p>
+        </section>
+      </details>
       <section id="finger-guide" class="finger-guide" aria-labelledby="finger-title">
         <div class="fretboard-tabs" role="tablist" aria-label="Fretboard view">
           <button id="fretboard-diagram-tab" type="button" role="tab" data-view="diagram" aria-controls="fretboard-diagram" aria-selected="true">Diagram</button>

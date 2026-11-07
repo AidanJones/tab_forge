@@ -11,6 +11,37 @@ available for existing lesson files.
 
 ## Browser practice
 
+Open **Tuner, chord trainer & scales** in either page, even without a loaded
+song. **Start microphone** asks for browser permission; choose your laptop mic
+or another input after access is granted. Use headphones, mute the unused strings
+and pluck one string at a time. The chromatic tuner shows the detected note,
+frequency, signed cents and flat/in-tune/sharp guidance (A4 = 440 Hz, ±5 cents).
+You can select a standard-tuning target string or adjust the quiet-sound gate.
+The microphone is analysed locally, never recorded/uploaded or routed to the
+speakers. Stop, collapsing the tools, hiding the page or leaving it releases the
+microphone; starting again is explicit. Browsers require localhost or HTTPS.
+
+**Chord check** provides 16 chord shapes and waits for each correct string pitch,
+low to high, when **Check notes with microphone** is enabled. It checks a held
+chord string by string; it does not recognise or grade a whole strum, buzzes,
+muted strings or finger placement. Use standard tuning and no capo. The separate
+tuner is the precise tuning check; practice steps accept pitches within 35 cents.
+
+**Scale trainer** generates two-octave major, natural minor, major/minor pentatonic,
+blues, harmonic minor, Dorian, Mixolydian and chromatic scales in all 12 keys
+(108 combinations), ascending, descending or both. It can wait for each note at
+your own pace, or **Load scale tab** into the normal score/scrolling player at
+80 BPM for audio, loops, finger suggestions and standard score/MIDI exports.
+In the editor this replaces the current lesson notes, so save them first.
+Song playback itself remains clock-driven; microphone waiting currently belongs
+to the standalone trainers. Detection is monophonic and needs a clear note;
+microphone placement, room noise and strong overtones can affect results.
+
+Microphone implementation uses browser
+[getUserMedia](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia)
+and an unconnected
+[AnalyserNode](https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode).
+
 Choose **Play-along** above the score in the editor or Practice page for scrolling
 string lanes. Play a note as its fret number crosses the fixed **PLAY NOW** line.
 Small coloured numbers suggest fretting fingers; chord names, playing instructions

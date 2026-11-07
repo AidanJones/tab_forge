@@ -4,9 +4,25 @@ import { Fretboard } from './fretboard.js';
 import { MidiOutput } from './midi-output.js';
 import { download, scoreFilename } from './download.js';
 import { PlayAlong } from './play-along.js';
+import { Tuner } from './tuner.js';
+import { Trainers } from './trainers.js';
 
 export function mountPractice(root = document, { embedded = false } = {}) {
   const $ = id => root.querySelector(`#${id}`);
+  let trainers;
+  new Tuner($('guitar-tuner'), { onReading: state => trainers?.update(state) });
+  trainers = new Trainers($('guitar-tuner'), exercise => {
+    if (embedded) {
+      root.dispatchEvent(new CustomEvent('tab-forge:exercise', { bubbles:true, detail:exercise }));
+      return;
+    }
+    const request=++sourceRequest;
+    run(async()=>{
+      const instance=await ensurePlayer();
+      if(request!==sourceRequest)return;
+      watchLoading();instance.loadTex(exercise.tex,'Scale trainer');
+    });
+  });
   const fretboard = new Fretboard($('finger-guide'));
   const playAlong = new PlayAlong($('play-along'));
   for (const button of root.querySelectorAll('[data-player-view]')) button.addEventListener('click', () => {
