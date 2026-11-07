@@ -1,5 +1,6 @@
 import { FINGER_COLORS } from './cartoon-bones.js';
 import { playAlongTick } from './transport.js';
+import { midiFrequency, pitchNote } from './pitch.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 function svg(tag, attrs = {}, text) {
@@ -94,5 +95,11 @@ export class PlayAlong {
     const bounce=matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : Math.sin(Math.PI*beatPhase)*18;
     this.canvas.append(svg('circle',{cx:hit,cy:119-bounce,r:7,fill:'#eff3b0'}));
     this.status.textContent = `${state.playing?'Playing':'Preview'} · ${state.speed}%${timeline.capo ? ` · capo ${timeline.capo}` : ''}${currentChord ? ` · ${currentChord}` : ''}. ${current?.text || 'Play each fret as it crosses the line.'}`;
+    const waiting=state.waiting;
+    if(waiting?.complete)this.status.textContent=`Complete · ${waiting.total} notes played. Press Start listening to try again.`;
+    else if(waiting?.active && waiting.target){
+      const name=midi=>{const n=pitchNote(midiFrequency(midi));return n.name+n.octave;};
+      this.status.textContent=`${waiting.index} / ${waiting.total} played · Play ${name(waiting.target.midi)} · string ${waiting.target.string}, ${waiting.target.fret ? `fret ${waiting.target.fret}`:'open'}${waiting.heard!==null && waiting.heard!==waiting.target.midi ? ` · Heard ${name(waiting.heard)} — try again`:''}`;
+    }
   }
 }

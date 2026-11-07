@@ -4,6 +4,7 @@ import { suggestFingering } from './fingering.js';
 import { addSuggestedShapes, removeSuggestedShapes, scoreForExport } from './chord-hints.js';
 import { addFingerExamples } from './finger-examples.js';
 import { playAlongTimeline } from './play-along-timeline.js';
+import { NoteFollowing } from './note-following.js';
 import { FINGER_EXAMPLE_ENGINE, registerFingerExampleRenderer } from './finger-example-renderer.js';
 
 export const SUPPORTED_FILES = /\.(gp[345]?|gpx|xml|musicxml|mxl|tex|alphatex)$/i;
@@ -26,6 +27,7 @@ export class PracticePlayer {
     this.fingerPlan = new WeakMap();
     this.activeBeats = [];
     this.countdownRemaining = 0;
+    this.noteFollowing = new NoteFollowing();
     this.scoreDisplay = { chordDiagrams: true, shapeHints: false, notation: 'both', fingerExamples: false };
     this.suggestedShapes = 0;
     this.position = { currentTime: 0, endTime: 0, currentTick: 0, endTick: 0 };
@@ -68,6 +70,7 @@ export class PracticePlayer {
     this.api.activeBeatsChanged.on(({ activeBeats }) => { this.activeBeats = activeBeats; this.emit(); });
     this.api.playerPositionChanged.on(position => {
       if (position.isSeek) this.cancelCountdown();
+      if (position.isSeek && this.noteFollowing.active) this.noteFollowing.seek(position.currentTick);
       if (position.isSeek) this.activeBeats = [];
       if (position.isSeek) this.onSilence();
       this.position = position;
@@ -75,6 +78,7 @@ export class PracticePlayer {
     });
     this.api.playbackRangeChanged.on(({ playbackRange }) => {
       this.cancelCountdown();
+      this.noteFollowing.pause();
       this.onSilence();
       if (this.snap === 'bar' && playbackRange) {
         const snapped = snapRangeToBars(playbackRange, this.bars);
@@ -87,6 +91,7 @@ export class PracticePlayer {
     });
     this.api.error.on(error => {
       this.cancelCountdown();
+      this.noteFollowing.pause();
       this.error = `The score or audio could not load: ${error.message}. Reload the page to retry audio setup, or open another score.`;
       this.loading = false;
       this.emit();
@@ -111,6 +116,7 @@ export class PracticePlayer {
       artist: score?.artist || '',
       playing: this.api.playerState === alphaTab.synth.PlayerState.Playing,
       countdown: this.countdownRemaining,
+      waiting: this.noteFollowing.snapshot,
       speed: Math.round(this.api.playbackSpeed * 100),
       looping: this.api.isLooping,
       range: this.api.playbackRange ? { ...this.api.playbackRange } : null,
@@ -200,7 +206,7 @@ export class PracticePlayer {
     return {
       track: track.name || `Track ${track.index + 1}`,
       tuning: [...staff.tuning], capo: staff.capo,
-      mode: playing ? 'This beat' : 'Preview — click a beat or press Play',
+      mode: this.noteFollowing.active ? 'Your turn — play the note at the line' : playing ? 'This beat' : 'Preview — click a beat or press Play',
       playing,
       handTransitionMs: Math.min(110, Math.max(25, (lookup?.duration ?? 300) / this.api.playbackSpeed * 0.18)),
       current: notesFor(currentBeats), next: notesFor(lookupBeats(nextLookup)),
@@ -210,6 +216,7 @@ export class PracticePlayer {
   loadScore(score, source) {
     if (this.disposed) return;
     this.cancelCountdown();
+    this.noteFollowing.reset();
     this.onSilence();
     this.api.stop();
     this.api.playbackRange = null;
@@ -272,6 +279,7 @@ export class PracticePlayer {
 
   async loadFile(file) {
     this.cancelCountdown();
+    this.noteFollowing.reset();
     const request = ++this.request;
     if (!SUPPORTED_FILES.test(file.name)) throw new Error('Choose a Guitar Pro, MusicXML or alphaTex file.');
     if (file.size > MAX_FILE_BYTES) throw new Error('Choose a file smaller than 50 MB.');
@@ -302,8 +310,9 @@ export class PracticePlayer {
     return pending;
   }
 
-  playPause(delaySeconds = 0) {
+  playPause(delaySeconds = 0, waitForNotes = false) {
     if (this.cancelCountdown(true)) return;
+    if (this.noteFollowing.active) { this.noteFollowing.pause();this.emit();return; }
     if (!this.snapshot.ready) return;
     this.error = '';
     this.onSilence();
@@ -320,18 +329,30 @@ export class PracticePlayer {
         if (!remaining) {
           this.cancelCountdown();
           if (document.hidden || this.disposed || !this.snapshot.ready) { this.emit(); return; }
-          try { this.playPause(); }
+          try { this.playPause(0, waitForNotes); }
           catch (error) { this.error = error.message; this.emit(); }
         } else this.emit();
       }, 50);
     }
-    else if (!this.api.play()) throw new Error('Audio is not ready. Try Play again after loading finishes.');
+    else if (waitForNotes) {
+      const tick=this.noteFollowing.start(this.playAlongView,{tick:this.position.currentTick,range:this.api.playbackRange,loop:this.api.isLooping});
+      this.api.tickPosition=tick;
+    }
+    else { this.noteFollowing.reset(); if (!this.api.play()) throw new Error('Audio is not ready. Try Play again after loading finishes.'); }
     this.emit();
   }
 
-  stop() { this.cancelCountdown(); this.onSilence(); this.activeBeats = []; this.api.stop(); this.emit(); }
+  stop() { this.cancelCountdown(); this.noteFollowing.reset(); this.onSilence(); this.activeBeats = []; this.api.stop(); this.emit(); }
+  hearNote(state) {
+    if(!this.noteFollowing.active)return;
+    if(state.state!=='listening'){this.noteFollowing.pause();this.emit();return;}
+    const previousHeard=this.noteFollowing.heard;
+    const tick=this.noteFollowing.hear(state);
+    if(tick!==null){this.onSilence();this.api.tickPosition=tick;this.emit();}
+    else if(previousHeard!==this.noteFollowing.heard)this.emit();
+  }
   setSpeed(value) { this.api.playbackSpeed = speedPercent(value) / 100; this.emit(); }
-  setLoop(value) { this.api.isLooping = value; this.emit(); }
+  setLoop(value) { this.api.isLooping = value; this.noteFollowing.loop=value; this.emit(); }
   setCountIn(value) { this.api.countInVolume = value ? 0.7 : 0; this.emit(); }
   setMetronome(value) { this.api.metronomeVolume = value ? 0.6 : 0; this.emit(); }
   setVolume(value) {
@@ -347,6 +368,7 @@ export class PracticePlayer {
   selectTrack(index) {
     if (!this.api.score?.tracks[index]) return;
     this.cancelCountdown();
+    this.noteFollowing.reset();
     this.onSilence();
     this.selectedTrack = index;
     this.activeBeats = [];
@@ -401,6 +423,7 @@ export class PracticePlayer {
 
   dispose() {
     this.cancelCountdown();
+    this.noteFollowing.reset();
     this.disposed = true;
     this.onSilence();
     ++this.request;

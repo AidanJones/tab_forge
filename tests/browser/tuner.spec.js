@@ -135,3 +135,54 @@ test('zero input and suspended capture have actionable feedback, and the live mi
   await page.getByRole('button',{name:'Stop microphone',exact:true}).click();
   expect(await page.evaluate(()=>window.micStops)).toBe(2);
 });
+
+test('a scale flows into microphone-driven scrolling: wrong notes hold, correct notes advance, and completion can restart',async({page})=>{
+  await fakeMicrophone(page);const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('/practice.html');await page.locator('#guitar-tuner summary').click();
+  await page.getByLabel('Trainer mode').selectOption('scale');
+  await page.getByLabel('Scale key').selectOption('4');await page.getByLabel('Scale type').selectOption('minorPentatonic');await page.getByLabel('Scale direction').selectOption('up');
+  await page.getByRole('button',{name:'Practise scale with microphone',exact:true}).click();
+  await expect(page.getByLabel('Play-along mode')).toHaveValue('wait');await expect(page.locator('#play-along')).toBeVisible();
+  await expect(page.locator('#play-along-play')).toBeDisabled();
+  await page.locator('#follow-microphone').click();
+  await expect(page.locator('#play-along-play')).toBeEnabled();
+  await expect(page.locator('#play-along-play')).toBeFocused();
+  await page.getByLabel('Play-along start delay').selectOption('0');await page.locator('#play-along-play').focus();await page.keyboard.press('Space');
+  await expect(page.locator('.play-along-status')).toContainText('0 / 11 played · Play E2');
+  const initial=await page.locator('#position').evaluate(n=>n.value);
+  await expect(page.locator('.play-along-status')).toContainText('Heard A2');
+  expect(await page.locator('#position').evaluate(n=>n.value)).toBe(initial);
+  const notes=[40,43,45,47,50,52,55,57,59,62,64];
+  for(const [index,midi] of notes.entries()){
+    await page.evaluate(f=>window.testPitch(f),frequency(midi));
+    if(index<notes.length-1)await expect(page.locator('.play-along-status')).toContainText(`${index+1} / 11 played`);
+  }
+  await expect(page.locator('.play-along-status')).toContainText('Complete · 11 notes played');
+  await expect(page.locator('#play-along-play')).toHaveText('Start listening');
+  await page.locator('#play-along-play').click();await expect(page.locator('.play-along-status')).toContainText('0 / 11 played');
+  await page.locator('#play-along-play').click();await expect(page.locator('#play-along-play')).toHaveText('Start listening');
+  const paused=await page.locator('#position').evaluate(n=>n.value);
+  await page.evaluate(f=>window.testPitch(f),frequency(40));await page.waitForTimeout(350);
+  expect(await page.locator('#position').evaluate(n=>n.value)).toBe(paused);
+  await page.getByLabel('Play-along start delay').selectOption('3');
+  await page.locator('#play-along-play').click();await expect(page.locator('#play-along-countdown')).toBeVisible();
+  await page.locator('#follow-microphone').click();await expect(page.locator('#play-along-countdown')).toBeHidden();
+  await expect(page.locator('#play-along-play')).toBeDisabled();
+  expect(errors).toEqual([]);
+});
+
+test('editor scale shortcut opens wait mode, shows the target at the line and stops following when the mic stops',async({page})=>{
+  await fakeMicrophone(page);await page.setViewportSize({width:390,height:844});await page.goto('/index.html');
+  await page.locator('#guitar-tuner summary').click();await page.getByLabel('Trainer mode').selectOption('scale');
+  await page.getByRole('button',{name:'Practise scale with microphone',exact:true}).click();
+  await expect(page.getByLabel('Play-along mode')).toHaveValue('wait');await expect(page.locator('#score-title')).toContainText('C major');
+  await page.locator('#follow-microphone').click();await expect(page.locator('#play-along-play')).toBeEnabled();
+  await page.getByLabel('Play-along start delay').selectOption('0');await page.locator('#play-along-play').click();
+  await expect(page.locator('.play-along-status')).toContainText('0 / 29 played · Play C3');
+  await page.evaluate(f=>window.testPitch(f),frequency(48));await expect(page.locator('.play-along-status')).toContainText('1 / 29 played · Play D3');
+  await page.waitForTimeout(200);await expect(page.locator('.play-along-status')).not.toContainText('try again');
+  await page.locator('#play-along').screenshot({path:'test-results/scale-wait-mobile.png'});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await page.locator('#follow-microphone').click();await expect(page.locator('#play-along-play')).toBeDisabled();
+  await page.getByLabel('Play-along mode').selectOption('timed');await expect(page.locator('#play-along-play')).toBeEnabled();
+});

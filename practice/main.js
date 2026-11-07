@@ -10,8 +10,22 @@ import { Trainers } from './trainers.js';
 export function mountPractice(root = document, { embedded = false } = {}) {
   const $ = id => root.querySelector(`#${id}`);
   let trainers;
-  new Tuner($('guitar-tuner'), { onReading: state => trainers?.update(state) });
-  trainers = new Trainers($('guitar-tuner'), exercise => {
+  let player;
+  let latest;
+  let microphoneState;
+  let pendingFollowExercise;
+  const tuner = new Tuner($('guitar-tuner'), { onReading: state => {
+    trainers?.update(state);
+    player?.hearNote(state);
+    if(state.state!=='listening' && $('play-along-mode').value==='wait')player?.cancelCountdown(true);
+    const changed=microphoneState!==state.state;
+    microphoneState=state.state;
+    if(changed && latest)render(latest);
+    if(changed && state.state==='listening' && document.activeElement===$('follow-microphone'))$('play-along-play').focus({preventScroll:true});
+    renderFollowMicrophone(state);
+  } });
+  trainers = new Trainers($('guitar-tuner'), (exercise, {wait=false} = {}) => {
+    if(wait)pendingFollowExercise=exercise.title;
     if (embedded) {
       root.dispatchEvent(new CustomEvent('tab-forge:exercise', { bubbles:true, detail:exercise }));
       return;
@@ -28,17 +42,16 @@ export function mountPractice(root = document, { embedded = false } = {}) {
   for (const button of root.querySelectorAll('[data-player-view]')) button.addEventListener('click', () => {
     player?.cancelCountdown(true);
     const scrolling = button.dataset.playerView === 'scrolling';
+    if(!scrolling && latest?.waiting?.active)player?.stop();
     $('play-along').hidden = !scrolling;
     $('score-viewport').hidden = scrolling;
     for (const other of root.querySelectorAll('[data-player-view]')) other.setAttribute('aria-pressed', String(other === button));
     playAlong.setVisible(scrolling);
   });
-  let player;
   let pendingPlayer;
   let localError = '';
   let mixerKey = '';
   let barKey = '';
-  let latest;
   let startDelay = 3;
   try {
     const saved = localStorage.getItem('tab-forge:start-delay');
@@ -50,7 +63,28 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     player?.cancelCountdown(true);
     try { localStorage.setItem('tab-forge:start-delay', String(startDelay)); } catch { /* Optional preference. */ }
   });
-  const playPause = () => player?.playPause($('play-along').hidden ? 0 : startDelay);
+  const playPause = () => {
+    const wait = !$('play-along').hidden && $('play-along-mode').value==='wait';
+    if(wait && tuner.latest?.state!=='listening')throw new Error('Enable the microphone in Play-along first, then start listening.');
+    player?.playPause($('play-along').hidden ? 0 : startDelay,wait);
+  };
+  $('play-along-mode').addEventListener('change',()=>{
+    player?.stop();
+    if(latest)render(latest);
+    renderFollowMicrophone(tuner.latest);
+  });
+  $('follow-microphone').addEventListener('click',()=>{
+    if(tuner.latest?.state==='listening' || tuner.latest?.state==='requesting')tuner.mic.stop();
+    else tuner.mic.start(tuner.$('.tuner-input').value);
+  });
+  function renderFollowMicrophone(state) {
+    if(!state)return;
+    const listening=state.state==='listening';
+    $('follow-microphone').textContent=listening?'Stop microphone':state.state==='requesting'?'Cancel microphone':'Enable microphone';
+    $('follow-mic-status').title=state.inputName||'';
+    const message=listening ? `Microphone on · ${state.signal==='silent'?'No signal — check the mic switch or tuner Input.':state.signal==='quiet'?'Quiet signal — lower the noise gate in the tuner if needed.':state.signal==='suspended'?'Audio paused — use Resume audio in the tuner.':'Play the note at the line to advance.'}` : state.state==='requesting'?'Allow microphone access, then start listening.':state.message || 'Enable microphone, then Start listening.';
+    if($('follow-mic-status').textContent!==message)$('follow-mic-status').textContent=message;
+  }
   document.addEventListener('visibilitychange', () => { if (document.hidden) player?.cancelCountdown(true); });
   let loadingTimer;
   let library = [];
@@ -181,7 +215,10 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     playAlong.update(state);
     $('play-along-play').disabled = !state.ready;
     $('play-along-stop').disabled = !state.ready;
-    $('play-along-play').textContent = state.countdown ? 'Cancel countdown' : state.playing ? 'Pause scrolling' : 'Play scrolling';
+    const waitMode=$('play-along-mode').value==='wait';
+    $('follow-controls').hidden=!waitMode;
+    $('play-along-play').textContent = state.countdown ? 'Cancel countdown' : state.waiting.active ? 'Pause listening' : state.playing ? 'Pause scrolling' : waitMode ? 'Start listening' : 'Play scrolling';
+    if(waitMode && microphoneState!=='listening')$('play-along-play').disabled=true;
     $('play-along-countdown').hidden = !state.countdown;
     $('play-along-countdown-number').textContent = state.countdown || '';
     $('score-title').textContent = state.title;
@@ -190,7 +227,7 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     $('empty-state').hidden = state.tracks.length > 0;
     $('status').textContent = state.error ? 'Playback needs attention.' : state.loading
       ? 'Reading the score…' : state.ready
-        ? (state.countdown ? `Get ready · starting in ${state.countdown}…` : state.playing ? 'Playing · follow the cursor.' : 'Ready when you are.')
+        ? (state.countdown ? `Get ready · starting in ${state.countdown}…` : state.waiting.active ? 'Listening · play the note at the line.' : state.playing ? 'Playing · follow the cursor.' : 'Ready when you are.')
         : 'Loading score, fonts and guitar sounds…';
     const error = state.error || localError;
     $('error').textContent = error;
@@ -202,7 +239,8 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     for (const id of ['from-bar', 'to-bar', 'select-bars', 'clear-range']) {
       $(id).disabled = !state.ready || !state.bars.length;
     }
-    $('play').textContent = state.countdown ? 'Cancel start' : state.playing ? 'Pause' : 'Play';
+    $('play').textContent = state.countdown ? 'Cancel start' : state.playing || state.waiting.active ? 'Pause' : 'Play';
+    if(waitMode && !$('play-along').hidden && microphoneState!=='listening')$('play').disabled=true;
     $('shape-hint-status').textContent = state.suggestedShapes
       ? `${state.suggestedShapes} suggested ${state.suggestedShapes===1?'grip':'grips'} labelled in the score. Written shapes take priority.`
       : 'Written shapes take priority; suggestions need an unambiguous fixed grip.';
@@ -253,6 +291,16 @@ export function mountPractice(root = document, { embedded = false } = {}) {
       $('range-label').textContent = `Whole score${state.looping ? ' · looping' : ' · turn on Loop to repeat.'}`;
     }
     if (state.ready) clearTimeout(loadingTimer);
+    if(state.ready && pendingFollowExercise===state.title){
+      pendingFollowExercise=null;
+      $('play-along-mode').value='wait';
+      root.querySelector('[data-player-view="scrolling"]').click();
+      $('follow-controls').hidden=false;
+      renderFollowMicrophone(tuner.latest);
+      $('play-along').scrollIntoView({block:'center'});
+      render(state);
+      requestAnimationFrame(()=>$(microphoneState==='listening'?'play-along-play':'follow-microphone').focus({preventScroll:true}));
+    }
   }
 
   function watchLoading() {

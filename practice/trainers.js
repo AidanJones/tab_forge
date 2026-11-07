@@ -14,6 +14,7 @@ export class Trainers {
     for(const selector of ['.trainer-root','.trainer-scale','.trainer-direction']) this.$(selector).addEventListener('change',()=>this.resetScale());
     this.$('.trainer-reset').addEventListener('click',()=>{this.resetChord();this.resetScale();});
     this.$('.trainer-load').addEventListener('click',()=>this.loadExercise(this.exercise));
+    this.$('.trainer-practise').addEventListener('click',()=>this.loadExercise(this.exercise,{wait:true}));
     this.$('.trainer-mode').addEventListener('change',()=>this.update());
     this.resetChord();this.resetScale();
   }

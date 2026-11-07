@@ -39,8 +39,18 @@ blues, harmonic minor, Dorian, Mixolydian and chromatic scales in all 12 keys
 your own pace, or **Load scale tab** into the normal score/scrolling player at
 80 BPM for audio, loops, finger suggestions and standard score/MIDI exports.
 In the editor this replaces the current lesson notes, so save them first.
-Song playback itself remains clock-driven; microphone waiting currently belongs
-to the standalone trainers. Detection is monophonic and needs a clear note;
+Choose **Practise scale with microphone** to load a scale and open Play-along in
+**Wait for notes** mode. Enable the microphone there, then **Start listening**.
+After the start countdown, the first target sits at the play line. Each correct
+stable pitch advances to the next target; wrong notes keep the view in place and
+show what was heard. Pause and Stop work immediately; stopping the microphone
+pauses following and cancels a pending countdown. Timed playback is still available.
+Wait mode supports single-note passages, skips rests/tied destinations and respects
+track tuning, capo, repeats and selected loop passages. Briefly mute between repeated
+pitches. Completion shows a result and Start listening restarts the passage.
+Browser/USB MIDI accompaniment stays silent while waiting, so it cannot satisfy
+the pitch check. Chord passages are rejected with an explanation.
+Detection is monophonic and needs a clear note;
 microphone placement, room noise and strong overtones can affect results.
 
 Microphone implementation uses browser
