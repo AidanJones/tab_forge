@@ -2,6 +2,7 @@ import practiceMarkup from './practice.html?raw';
 import { mountPractice } from './practice/main.js';
 import { lessonToAlphaTex } from './practice/lesson-converter.js';
 import { download, scoreFilename } from './practice/download.js';
+import { CHORD_LIBRARY } from './practice/chord-library.js';
 
 const root = document.getElementById('editor-player');
 const template = new DOMParser().parseFromString(practiceMarkup, 'text/html');
@@ -37,7 +38,7 @@ document.addEventListener('tab-forge:editor-update', async event => {
   root.inert = true;
   root.classList.add('out-of-date');
   try {
-    const converted = lessonToAlphaTex(event.detail.data, event.detail.chords, {
+    const converted = lessonToAlphaTex(event.detail.data, CHORD_LIBRARY, {
       tempo: Number(tempo.value), duration: Number(duration.value),
     });
     notice.textContent = 'Preparing your playable score…';
@@ -46,7 +47,7 @@ document.addEventListener('tab-forge:editor-update', async event => {
     root.inert = !loaded;
     root.classList.toggle('out-of-date', !loaded);
     notice.textContent = loaded
-      ? `${converted.beatCount} notes/chords · ${tempo.value} BPM · ${duration.selectedOptions[0].textContent.toLowerCase()} each.${converted.paddedRests ? ' Final bar padded with rests.' : ''}${converted.annotations ? ' Text annotations stay in the printable sheet.' : ''}`
+      ? `${converted.beatCount} notes/chords · ${tempo.value} BPM · ${duration.selectedOptions[0].textContent.toLowerCase()} each.${converted.paddedRests ? ' Incomplete bars padded with rests.' : ''}${converted.annotations ? ' Playing instructions included in the score.' : ''}${converted.lyricLines ? ' Lyrics included below the notes.' : ''}`
       : 'The score could not load. Check your notes and update the preview to retry.';
   } catch (error) {
     notice.textContent = error.message;
@@ -58,6 +59,6 @@ for (const control of [tempo, duration]) {
   control.addEventListener('change', () => window.updateOutput());
 }
 
-// The inline editor still owns markdown parsing and its printable preview.
+// The source editor owns shorthand parsing; the shared player is the only score.
 // Reuse the same update path for existing share URLs and the first page render.
 if (document.getElementById('input').value.trim()) window.updateOutput();

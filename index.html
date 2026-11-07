@@ -34,7 +34,7 @@ C: x32010
 Am: x02210
 
 [Intro - C]
-3f6s 2f5s 0s4 0s3 0s2 0s1
+3f5s 2f4s 0s3 1f2s
 note: Start slowly
 
 [Verse 1]
@@ -53,12 +53,14 @@ note: Start slowly
           <div><dt><code>0s3</code></dt><dd>Open string 3</dd></div>
           <div><dt><code>2f5s+2f4s</code></dt><dd>Play together</dd></div>
           <div><dt><code>[Verse]</code></dt><dd>Start a section</dd></div>
+          <div><dt><code>[Verse - C]</code></dt><dd>C hand shape while picking individual strings</dd></div>
+          <div><dt><code>shape: Am</code></dt><dd>Change the hand-shape hint without adding a strum</dd></div>
           <div><dt><code>note: slowly</code></dt><dd>Add a reminder</dd></div>
           <div><dt><code>"Your lyrics"</code></dt><dd>Keep the words</dd></div>
         </dl></details>
       </section>
       <section class="preview-panel" aria-labelledby="preview-title">
-        <div class="panel-heading"><div><p class="eyebrow">02 / Play</p><h2 id="preview-title">Your score &amp; finger guide</h2></div><button onclick="window.print()" class="print-button">Print / PDF</button></div>
+        <div class="panel-heading"><div><p class="eyebrow">02 / Play</p><h2 id="preview-title">Your score &amp; finger guide</h2></div></div>
         <div class="lesson-timing">
           <label>Base tempo <input id="editor-tempo" type="number" min="40" max="240" value="80" step="1"> BPM</label>
           <label>Each note/chord <select id="editor-duration"><option value="4">Quarter note</option><option value="8">Eighth note</option><option value="16">Sixteenth note</option></select></label>
@@ -66,40 +68,12 @@ note: Start slowly
           <p id="editor-playback-status" role="status">Write a section and a few notes, then update the preview.</p>
         </div>
         <div id="editor-player"></div>
-        <details class="printable-sheet" open><summary>Lesson notes &amp; printable sheet</summary>
-    <div class="output-section" id="output">
-        <div class="empty-state">
-            <span class="empty-mark" aria-hidden="true">♩</span>
-            <h3>Every song starts with a few notes.</h3>
-            <p>Write your lesson notes, then update the preview.</p>
-            <p class="empty-hint">Or load an example to find your rhythm.</p>
-        </div>
-    </div>
-        </details>
+
       </section>
       </div>
       <p class="page-footnote">A space to write. A space to practise. <a href="./practice.html">Play Guitar Pro files in Practice ↗</a></p>
     </main>
     <script>
-        // Chord library - frets from low E to high e
-        const CHORD_LIBRARY = {
-            'Am': [-1, 0, 2, 2, 1, 0],
-            'C': [-1, 3, 2, 0, 1, 0],
-            'Dm': [-1, -1, 0, 2, 3, 1],
-            'Em': [0, 2, 2, 0, 0, 0],
-            'G': [3, 2, 0, 0, 0, 3],
-            'A': [-1, 0, 2, 2, 2, 0],
-            'D': [-1, -1, 0, 2, 3, 2],
-            'E': [0, 2, 2, 1, 0, 0],
-            'F': [1, 3, 3, 2, 1, 1],
-            'Fmaj7': [1, 3, 3, 2, 1, 0],
-            'Cmaj7': [-1, 3, 2, 0, 0, 0],
-            'Asus2': [-1, 0, 2, 2, 0, 0],
-            'Dsus2': [-1, -1, 0, 2, 3, 0],
-            'Esus4': [0, 2, 2, 2, 0, 0],
-            'Asus4': [-1, 0, 2, 2, 3, 0],
-        };
-
         // Parse the markdown input
         function parseMarkdown(text) {
             const lines = text.split('\n');
@@ -120,7 +94,9 @@ note: Start slowly
 
                 // Check for metadata
                 if (line.includes(':') && !line.startsWith('[') && !inChordsSection && !currentSection) {
-                    const [key, value] = line.split(':').map(s => s.trim());
+                    const separator = line.indexOf(':');
+                    const key = line.slice(0, separator).trim();
+                    const value = line.slice(separator + 1).trim();
                     if (['key', 'tuning', 'title', 'artist'].includes(key.toLowerCase())) {
                         result.metadata[key.toLowerCase()] = value;
                         continue;
@@ -146,10 +122,10 @@ note: Start slowly
                 if (line.startsWith('[') && line.endsWith(']')) {
                     inChordsSection = false;
                     const sectionText = line.slice(1, -1);
-                    const parts = sectionText.split('-').map(s => s.trim());
+                    const parts = sectionText.match(/^(.*?)\s+-\s+(.+)$/);
                     currentSection = {
-                        name: parts[0],
-                        chord: parts[1] || null,
+                        name: parts ? parts[1] : sectionText,
+                        chord: parts ? parts[2] : null,
                         content: []
                     };
                     result.sections.push(currentSection);
@@ -170,287 +146,10 @@ note: Start slowly
             return result;
         }
 
-        // Parse note notation like "3f1s" or "0s3"
-        function parseNoteNotation(notation) {
-            const notes = [];
-            const parts = notation.split('+').map(s => s.trim());
-
-            for (const part of parts) {
-                // Pattern: 3f1s (fret + 'f' + string + 's')
-                let match = part.match(/(\d+)f(\d+)s/);
-                if (match) {
-                    const fret = parseInt(match[1]);
-                    const string = parseInt(match[2]);
-                    notes.push({ fret, string });
-                    continue;
-                }
-
-                // Pattern: 0s1 (open string)
-                match = part.match(/0s(\d+)/);
-                if (match) {
-                    const string = parseInt(match[1]);
-                    notes.push({ fret: 0, string });
-                }
-            }
-
-            return notes;
-        }
-
-        // Convert notes to ASCII tab
-        function notesToTab(notesLine) {
-            const stringNames = ['e', 'B', 'G', 'D', 'A', 'E'];
-            const strings = [[], [], [], [], [], []]; // 6 strings
-
-            const elements = notesLine.replace(/\s*\+\s*/g, '+').split(/\s+/).filter(e => e);
-
-            for (const element of elements) {
-                if (element.includes('+')) {
-                    // Multiple notes at once
-                    const notes = parseNoteNotation(element);
-                    if (notes.length === 0) continue;
-                    const width = Math.max(...notes.map(note => String(note.fret).length));
-
-                    const playedStrings = new Set(notes.map(n => n.string));
-                    for (let i = 0; i < 6; i++) {
-                        const stringNum = i + 1; // String 1 is high e.
-                        const note = notes.find(n => n.string === stringNum);
-                        if (note) {
-                            strings[i].push(note.fret.toString().padEnd(width, '-'));
-                        } else {
-                            strings[i].push('-'.repeat(width));
-                        }
-                    }
-                } else if (element.match(/\d+f\d+s|0s\d+/)) {
-                    // Single note
-                    const notes = parseNoteNotation(element);
-                    if (notes.length === 0) continue;
-
-                    const note = notes[0];
-                    for (let i = 0; i < 6; i++) {
-                        const stringNum = i + 1;
-                        if (stringNum === note.string) {
-                            strings[i].push(note.fret.toString());
-                        } else {
-                            strings[i].push('-'.repeat(String(note.fret).length));
-                        }
-                    }
-                }
-            }
-
-            // Build the tab lines
-            const tabLines = [];
-            for (let i = 0; i < 6; i++) {
-                if (strings[i].length > 0) {
-                    const line = `${stringNames[i]}|${strings[i].join('-')}|`;
-                    tabLines.push(line);
-                }
-            }
-
-            return tabLines.join('\n');
-        }
-
-        // Check if a string is a chord name
-        function isChordName(text) {
-            text = text.trim();
-
-            // Check if it's in the chord library (case-insensitive)
-            if (Object.keys(CHORD_LIBRARY).some(name => name.toLowerCase() === text.toLowerCase())) {
-                return true;
-            }
-
-            // Check common chord patterns: C, Cm, C7, Cmaj7, Csus4, etc.
-            const chordPattern = /^[A-G](#|b)?(m|maj|min|sus|aug|dim|add)?[0-9]?$/i;
-            return chordPattern.test(text);
-        }
-
-        // Convert chord to tab notation
-        function chordToTab(chordName, customChords = {}) {
-            const stringNames = ['e', 'B', 'G', 'D', 'A', 'E'];
-
-            // Look up chord in library or custom chords
-            const customName = Object.keys(customChords).find(name => name.toLowerCase() === chordName.toLowerCase());
-            const builtInName = Object.keys(CHORD_LIBRARY).find(name => name.toLowerCase() === chordName.toLowerCase());
-            if (customName !== undefined && !/^[xX0-9]{6}$/.test(customChords[customName])) {
-                return `Invalid shape for "${chordName}": use six fret digits or x, from low E to high e.`;
-            }
-            let frets = customName === undefined ? CHORD_LIBRARY[builtInName]
-                : customChords[customName].split('').map(value => /x/i.test(value) ? -1 : Number(value));
-
-            if (!frets) {
-                return `Chord "${chordName}" not found`;
-            }
-
-            // Build tab with all strings showing the chord
-            const tabLines = [];
-            for (let i = 0; i < 6; i++) {
-                const fret = frets[5 - i]; // Reverse order (library is low to high)
-                let fretStr = fret === -1 ? 'x' : fret.toString();
-                const line = `${stringNames[i]}|${fretStr}|`;
-                tabLines.push(line);
-            }
-
-            return tabLines.join('\n');
-        }
-
-        // Generate chord diagram
-        function generateChordDiagram(chordName, positions) {
-            // positions is a string like "x32010"
-            const frets = positions.split('').map(p => {
-                if (p === 'x' || p === 'X') return -1;
-                return parseInt(p);
-            });
-
-            // Find the fret range
-            const playedFrets = frets.filter(f => f > 0);
-            const minFret = playedFrets.length > 0 ? Math.min(...playedFrets) : 0;
-            const maxFret = playedFrets.length > 0 ? Math.max(...playedFrets) : 3;
-            const startFret = minFret > 3 ? minFret : 1;
-            const numFrets = Math.max(4, maxFret - startFret + 1);
-
-            let diagram = '';
-
-            // Top markers (x or o)
-            const markers = frets.map(f => {
-                if (f === -1) return 'x';
-                if (f === 0) return 'o';
-                return ' ';
-            }).join(' ');
-            diagram += `  ${markers}\n`;
-
-            // Fret lines
-            for (let fret = 0; fret < numFrets; fret++) {
-                const fretNum = startFret + fret;
-
-                // Fret number on left (only show for starting fret if not 1)
-                const label = (fret === 0 && startFret > 1) ? `${startFret}` : ' ';
-                diagram += label.padStart(2) + ' ';
-
-                // String positions
-                for (let str = 0; str < 6; str++) {
-                    const stringFret = frets[str];
-                    if (stringFret === fretNum) {
-                        diagram += '●';
-                    } else if (fret === 0 && startFret === 1) {
-                        diagram += '═';
-                    } else {
-                        diagram += '─';
-                    }
-                    if (str < 5) diagram += '─';
-                }
-                diagram += '\n';
-            }
-
-            return diagram;
-        }
-
-        // Render the parsed data
-        function render(data) {
-            const output = document.getElementById('output');
-            let html = '';
-
-            // Metadata
-            if (Object.keys(data.metadata).length > 0) {
-                html += '<div class="metadata">';
-                if (data.metadata.title) {
-                    html += `<div class="song-title">${escapeHtml(data.metadata.title)}</div>`;
-                }
-                if (data.metadata.artist) {
-                    html += `<div class="song-artist">${escapeHtml(data.metadata.artist)}</div>`;
-                }
-                const info = [];
-                if (data.metadata.key) info.push(`Key: ${escapeHtml(data.metadata.key)}`);
-                if (data.metadata.tuning) info.push(`Tuning: ${escapeHtml(data.metadata.tuning)}`);
-                if (info.length > 0) {
-                    html += `<div class="song-info">${info.join(' • ')}</div>`;
-                }
-                html += '</div>';
-            }
-
-            // Chords
-            if (Object.keys(data.chords).length > 0) {
-                html += '<div class="chords-section">';
-                html += '<h3>Chords</h3>';
-                html += '<div class="chord-diagrams">';
-                for (const [name, positions] of Object.entries(data.chords)) {
-                    const diagram = generateChordDiagram(name, positions);
-                    html += '<div class="chord-diagram">';
-                    html += `<div class="chord-name">${escapeHtml(name)}</div>`;
-                    html += `<div class="chord-grid">${diagram}</div>`;
-                    html += '</div>';
-                }
-                html += '</div>';
-                html += '</div>';
-            }
-
-            // Sections
-            for (const section of data.sections) {
-                html += '<div class="section">';
-
-                // Section header
-                let headerText = section.name;
-                if (section.chord) {
-                    headerText += ` - ${section.chord}`;
-                }
-                html += `<div class="section-header">${escapeHtml(headerText)}</div>`;
-
-                // Section content
-                for (const line of section.content) {
-                    // Check if it's a lyrics line (quoted)
-                    if (line.startsWith('"') && line.endsWith('"')) {
-                        const lyrics = line.slice(1, -1);
-                        html += `<div class="lyrics">${escapeHtml(lyrics)}</div>`;
-                    }
-                    // Check if it's a note
-                    else if (line.toLowerCase().startsWith('note:')) {
-                        const noteText = line.slice(5).trim();
-                        html += `<div class="note">${escapeHtml(noteText)}</div>`;
-                    }
-                    // Check if it's a chord label [ChordName]
-                    else if (line.startsWith('[') && line.endsWith(']')) {
-                        const chordName = line.slice(1, -1);
-                        html += `<div class="chord-label">[${escapeHtml(chordName)}]</div>`;
-                    }
-                    // Check if it's a chord shorthand (single chord name)
-                    else if (isChordName(line) || Object.keys(data.chords).some(name => name.toLowerCase() === line.toLowerCase())) {
-                        // Add the chord label above the tab
-                        html += `<div class="chord-label">[${escapeHtml(line)}]</div>`;
-                        const tab = chordToTab(line, data.chords);
-                        html += `<div class="tab-line">${escapeHtml(tab)}</div>`;
-                    }
-                    // Otherwise it's tab notation
-                    else if (line.match(/\d+f\d+s|0s\d+/)) {
-                        const tab = notesToTab(line);
-                        if (tab) {
-                            html += `<div class="tab-line">${tab}</div>`;
-                        }
-                    }
-                    // Plain text
-                    else {
-                        html += `<div style="margin-bottom: 10px; color: #666;">${escapeHtml(line)}</div>`;
-                    }
-                }
-
-                html += '</div>';
-            }
-
-            if (html === '') {
-                html = '<div class="empty-state"><h2>No content parsed</h2><p>Check your tab notation format</p></div>';
-            }
-
-            output.innerHTML = html;
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
         function updateOutput() {
             const input = document.getElementById('input').value;
             const data = parseMarkdown(input);
-            render(data);
-            document.dispatchEvent(new CustomEvent('tab-forge:editor-update', { detail: { data, chords: CHORD_LIBRARY } }));
+            document.dispatchEvent(new CustomEvent('tab-forge:editor-update', { detail: { data } }));
 
             // Update URL with encoded input
             const encoded = encodeURIComponent(input);
@@ -490,13 +189,12 @@ Em: 022000
 G: 320003
 
 [Intro - C]
-3f6s 2f5s 0s4 0s3 0s2 0s1
+3f5s 2f4s 0s3 1f2s
 note: Start slowly, let each note ring
 
-[Verse 1]
-"We are the champions my friend"
-[Am]
-0s5 1f5s 2f5s 2f4s
+[Verse 1 - Am]
+"Take your time now"
+0s5 2f4s 2f3s 1f2s
 note: Play this softly and fingerpick
 
 [Transition]
@@ -506,16 +204,16 @@ note: These two notes together make part of E minor
 [Chorus - Em]
 em
 note: Strum all strings together for full chord
-"And we'll keep on fighting till the end"
+"Let the chord ring out"
 
 [Bridge - G]
-3f1s 3f2s 0s3 0s4 2f5s 3f6s
+3f1s 0s2 0s3 0s4 2f5s 3f6s
 note: This is an ascending pattern through the G chord
 
 [Outro]
 [C]
 0s1 1f2s 0s3 2f4s 3f5s
-"We are the champions"
+"One more time"
 note: End with a nice arpeggio`;
 
             document.getElementById('input').value = example;

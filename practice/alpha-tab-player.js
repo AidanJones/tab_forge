@@ -1,6 +1,7 @@
 import * as alphaTab from '@coderline/alphatab';
 import { rangeForBars, sameRange, snapRangeToBars, speedPercent } from './transport.js';
 import { suggestFingering } from './fingering.js';
+import { addSuggestedShapes, removeSuggestedShapes, scoreForExport } from './chord-hints.js';
 
 export const SUPPORTED_FILES = /\.(gp[345]?|gpx|xml|musicxml|mxl|tex|alphatex)$/i;
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
@@ -21,6 +22,8 @@ export class PracticePlayer {
     this.source = '';
     this.fingerPlan = new WeakMap();
     this.activeBeats = [];
+    this.scoreDisplay = { chordDiagrams: true, shapeHints: false };
+    this.suggestedShapes = 0;
     this.position = { currentTime: 0, endTime: 0, currentTick: 0, endTick: 0 };
     this.api = new alphaTab.AlphaTabApi(element, {
       core: { fontDirectory: `${import.meta.env.BASE_URL}font/` },
@@ -94,6 +97,7 @@ export class PracticePlayer {
       loading: this.loading,
       error: this.error,
       source: this.source,
+      suggestedShapes: this.suggestedShapes,
       title: score?.title || this.source || 'Choose a score to begin',
       artist: score?.artist || '',
       playing: this.api.playerState === alphaTab.synth.PlayerState.Playing,
@@ -192,9 +196,29 @@ export class PracticePlayer {
     this.source = source;
     this.error = '';
     this.position = { currentTime: 0, endTime: 0, currentTick: 0, endTick: 0 };
+    this.applyScoreDisplay(score);
     this.api.renderScore(score, [0]);
     this.emit();
   }
+
+  applyScoreDisplay(score) {
+    removeSuggestedShapes(score);
+    this.suggestedShapes = this.scoreDisplay.shapeHints ? addSuggestedShapes(score) : 0;
+    score.stylesheet.globalDisplayChordDiagramsOnTop = this.scoreDisplay.chordDiagrams;
+    score.stylesheet.perTrackChordDiagramsOnTop = null;
+    score.stylesheet.globalDisplayChordDiagramsInScore = this.scoreDisplay.shapeHints;
+  }
+
+  setScoreDisplay(options) {
+    this.scoreDisplay = { ...this.scoreDisplay, ...options };
+    if (this.api.score) {
+      this.applyScoreDisplay(this.api.score);
+      this.api.render();
+      this.emit();
+    }
+  }
+
+  printScore() { if (this.api.score) this.api.print(); }
 
   loadTex(text, source = 'alphaTex score') {
     ++this.request; // Supersede a pending file read.
@@ -291,13 +315,14 @@ export class PracticePlayer {
 
   exportFile(format) {
     if (!this.api.score || !this.snapshot.ready) throw new Error('Load or update a score before saving it.');
-    if (format === 'gp') return new alphaTab.exporter.Gp7Exporter().export(this.api.score, this.api.settings);
-    if (format === 'alphatex') return new alphaTab.exporter.AlphaTexExporter().exportToString(this.api.score, this.api.settings);
+    const score = scoreForExport(this.api.score, this.api.settings);
+    if (format === 'gp') return new alphaTab.exporter.Gp7Exporter().export(score, this.api.settings);
+    if (format === 'alphatex') return new alphaTab.exporter.AlphaTexExporter().exportToString(score, this.api.settings);
     if (format === 'mid') {
       const file = new alphaTab.midi.MidiFile();
       file.format = alphaTab.midi.MidiFileFormat.SingleTrackMultiChannel;
       const handler = new alphaTab.midi.AlphaSynthMidiFileHandler(file, true);
-      new alphaTab.midi.MidiFileGenerator(this.api.score, this.api.settings, handler).generate();
+      new alphaTab.midi.MidiFileGenerator(score, this.api.settings, handler).generate();
       return file.toBinary();
     }
     throw new Error('Choose Guitar Pro (.gp), MIDI (.mid) or alphaTex.');

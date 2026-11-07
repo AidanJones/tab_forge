@@ -26,12 +26,54 @@ test('custom chords override case-insensitive built-in shapes and preserve muted
   assert.equal(notes.find(note => note.string === 6).fret, 3);
 });
 
-test('metadata is quoted, lesson annotations are retained outside the musical stream', () => {
+test('metadata is quoted, playing instructions and lyrics become native score annotations', () => {
   const title = 'Riff "A" \\ 50%';
   const result = lessonToAlphaTex(doc(['note: easy', '"words"', 'A gentle picking pattern', '0s1'], { title }), { A: [-1, 0, 2, 2, 2, 0] });
   assert.equal(parse(result).title, title);
-  assert.equal(result.annotations, 1);
+  assert.equal(result.annotations, 2);
   assert.equal(result.beatCount, 1);
+  const beat=parse(result).tracks[0].staves[0].bars[0].voices[0].beats[0];
+  assert.equal(beat.text,'easy · A gentle picking pattern');
+  assert.deepEqual(beat.lyrics,['words']);
+  assert.equal(parse(result).tracks[0].staves[0].chords?.size ?? 0,0); // "A gentle..." is prose, not a used A chord.
+});
+
+test('fingerpicked phrases retain sections, chord shapes, instructions and lyrics through standard exports',()=>{
+  const result=lessonToAlphaTex({metadata:{title:'Fingerpicked lesson'},chords:{C:'x32010',Am:'x02210'},sections:[
+    {name:'Verse',chord:'C',content:['note: Play softly; let it ring','"Take your time now"','3f5s 2f4s 0s3 1f2s','0s1 1f2s 0s3 2f4s']},
+    {name:'Chorus',chord:'Am',content:['0s5 2f4s','note: Gently','lyrics: Sing these words']},
+  ]},{});
+  const settings=new Settings(),score=parse(result);
+  for(const loaded of [score,importer.ScoreLoader.loadScoreFromBytes(new exporter.Gp7Exporter().export(score,settings),settings),importer.ScoreLoader.loadAlphaTex(new exporter.AlphaTexExporter().exportToString(score,settings),settings)]) {
+    const staff=loaded.tracks[0].staves[0];
+    assert.equal(loaded.masterBars[0].section.text,'Verse');
+    assert.equal(loaded.masterBars[2].section.text,'Chorus');
+    assert.deepEqual([...staff.chords.values()].find(chord=>chord.name==='C').strings,[0,1,0,2,3,-1]);
+    assert.equal(staff.bars[0].voices[0].beats[0].chord.name,'C');
+    assert.equal(staff.bars[1].voices[0].beats[0].chord.name,'C');
+    assert.equal(staff.bars[0].voices[0].beats[0].text,'Play softly; let it ring');
+    assert.deepEqual(staff.bars[0].voices[0].beats.map(beat=>beat.lyrics?.[0]),['Take','your','time','now']);
+    assert.equal(staff.bars[2].voices[0].beats[0].chord.name,'Am');
+    assert.equal(staff.bars[2].voices[0].beats[0].text,'Gently');
+    assert.deepEqual(staff.bars[2].voices[0].beats.slice(0,2).map(beat=>beat.lyrics?.[0]),['Sing','these words']);
+    assert(staff.bars[0].voices[0].beats.every(beat=>beat.notes.length===1));
+  }
+});
+
+test('shape changes annotate individual notes without adding strummed chords',()=>{
+  const result=lessonToAlphaTex(doc(['shape: C','3f5s 2f4s','shape: Am','note: Play softer','0s5 2f4s'],{}, {C:'x32010',Am:'x02210'}),{});
+  const beats=parse(result).tracks[0].staves[0].bars[0].voices[0].beats;
+  assert.deepEqual(beats.map(b=>b.notes.length),[1,1,1,1]);
+  assert.equal(beats[0].chord.name,'C');
+  assert.equal(beats[2].chord.name,'Am');
+  assert.equal(beats[2].text,'Play softer');
+  assert.equal(beats[0].text,null);
+  assert.throws(()=>lessonToAlphaTex(doc(['shape: Unknown','0s1']),{}),/Define the shape/);
+});
+
+test('higher-position custom shapes place their diagram at the correct first fret',()=>{
+  const result=lessonToAlphaTex(doc(['shape: High','7f5s 7f4s'],{}, {High:'x77777'}),{});
+  assert.equal([...parse(result).tracks[0].staves[0].chords.values()][0].firstFret,7);
 });
 
 test('unsupported tuning and malformed playable notes produce actionable errors', () => {

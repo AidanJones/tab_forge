@@ -118,6 +118,12 @@
         <ul id="finger-notes" class="finger-notes" aria-label="Finger positions for this beat"></ul>
         <p id="finger-caution" class="finger-caution">Suggested fingers are starting points; written finger hints take priority.</p>
       </section>
+      <div class="score-display-options" aria-label="Score display">
+        <label><input id="score-chords" type="checkbox" checked> Chord diagrams at top</label>
+        <label><input id="score-shapes" type="checkbox"> Shape hints above bars</label>
+        <span id="shape-hint-status">Written shapes take priority; suggestions need an unambiguous fixed grip.</span>
+        <button id="print-score" disabled>Print / PDF</button>
+      </div>
       <div id="score-viewport" tabindex="0" aria-label="Score. Drag across beats to select a passage.">
         <div id="empty-state"><span class="empty-mark" aria-hidden="true">♩</span><h3>Your next practice starts here.</h3><p>Drop a Guitar Pro, MusicXML or alphaTex file anywhere in this panel.</p><p class="muted">Files stay in your browser.</p></div>
         <div id="score"></div>

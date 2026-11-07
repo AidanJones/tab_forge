@@ -60,26 +60,30 @@ test('editor matches Practice and still renders lesson notes on desktop and mobi
   await page.goto('/index.html');
   await expect(page.getByRole('heading', { name: 'A place for your playing.' })).toBeVisible();
   await page.getByRole('button', { name: 'Load example', exact: true }).click();
-  await expect(page.locator('.song-title')).toHaveText('Example Song');
-  await expect(page.locator('.tab-line').first()).toBeVisible();
+  await expect(page.locator('#score-title')).toHaveText('Example Song');
+  await page.locator('#score-viewport').scrollIntoViewIfNeeded();
+  await expect(page.locator('#score svg').first()).toBeVisible();
+  await expect(page.locator('.tab-line')).toHaveCount(0);
   await page.screenshot({ path: 'test-results/editor-desktop.png', fullPage: true });
   await page.locator('#input').fill('title: My lesson\n[Intro]\n3f1s 0s2\nnote: slowly');
   await page.locator('#input').press('Control+Enter');
-  await expect(page.locator('.song-title')).toHaveText('My lesson');
-  await expect(page.locator('.note')).toHaveText('slowly');
+  await expect(page.locator('#score-title')).toHaveText('My lesson');
+  await page.locator('#score-viewport').scrollIntoViewIfNeeded();
+  await expect(page.locator('#score')).toContainText('slowly');
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await page.screenshot({ path: 'test-results/editor-mobile.png', fullPage: true });
   await page.emulateMedia({ media: 'print' });
   await expect(page.locator('.input-section')).toBeHidden();
-  await expect(page.locator('.output-section')).toBeVisible();
+  await expect(page.locator('#score')).toBeVisible();
 });
 
 test('editor share URLs retain percent text and metadata renders as text', async ({ page }) => {
   const source = 'title: 50% practice\nkey: <img src=x onerror=alert(1)>\n[Intro]\n0s1';
   await page.goto(`/index.html?tab=${encodeURIComponent(source)}`);
   await expect(page.locator('#input')).toHaveValue(source);
-  await expect(page.locator('.song-title')).toHaveText('50% practice');
-  await expect(page.locator('.song-info')).toContainText('<img');
-  await expect(page.locator('#output img')).toHaveCount(0);
+  await expect(page.locator('#score-title')).toHaveText('50% practice');
+  await page.locator('#score-viewport').scrollIntoViewIfNeeded();
+  await expect(page.locator('#score')).toContainText('<img');
+  await expect(page.locator('#score img')).toHaveCount(0);
 });

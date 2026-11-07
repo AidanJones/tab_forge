@@ -1,14 +1,13 @@
 # tab_forge
 
-The aim of this repository is to take a basic guitar tab and use it to create a well formatted pdf of the guitar tab.
+Write guitar tabs, practise them slowly, and keep the chord shapes, lyrics and playing instructions together.
 
 ## Overview
 
-**tab_forge** is a simple Python tool that converts ASCII guitar tabs (the kind you'd write in a text file) into beautifully formatted PDFs. Perfect for creating clean, printable guitar tabs for practice or sharing.
-
-It also has a browser Practice view for playing Guitar Pro scores, slowing them
-down and looping passages. The existing markdown editor and Python PDF tools
-remain available.
+**tab_forge** is a browser tab editor and practice player. It renders one standard
+score, plays Guitar Pro files at adjustable speed, loops passages and provides
+chord diagrams and a fretting-hand guide. The original Python PDF tools remain
+available for existing lesson files.
 
 ## Browser practice
 
@@ -89,10 +88,47 @@ assumed uniform timing. Playback slowdown is a practice setting and does not
 rewrite the exported score's base tempo.
 
 Use **Save notes (.md)** beside the editor controls to retain the complete lesson
-source, including lyrics and annotations that are not part of the musical export.
+source. Chord shapes, section markers, playing instructions and lyrics are also
+included in Guitar Pro and alphaTex exports.
 GP and alphaTex downloads can be opened in Practice via the file picker or by
 placing them in `public/scores/` and refreshing the library. The same export
 buttons also work on scores opened directly in Practice.
+
+### Chords, playing instructions and lyrics
+
+The editor uses the same score view as Practice, including printing via
+**Print / PDF**. Chord diagrams appear at the top by default. Enable **Shape hints
+above bars** to see full diagrams beside the passage, including when you pick
+individual strings instead of strumming. Both display preferences are remembered
+across the editor and Practice pages.
+
+```text
+chords:
+C: x32010
+Am: x02210
+
+[Verse - C]
+note: Play softly and let each string ring
+"Take your time now"
+3f5s 2f4s 0s3 1f2s
+
+shape: Am
+0s5 2f4s 2f3s 1f2s
+```
+
+`[Verse - C]`, `[C]` and `shape: C` set a hand-shape hint without adding a played
+chord. `shape: off` clears that context. A chord name on a music line still plays
+the whole chord. Instructions (`note:` or plain text) and lyrics (quoted text or
+`lyrics:`) attach to the preceding picking line in that section, or the following
+line when written before any music or after a `shape:` change. Lyrics use one word per beat, grouping any
+remaining words on the final beat. Timing and lyric alignment remain a draft;
+each named section starts a fresh bar and short bars are padded with rests.
+
+The shape-hint option can also suggest an unambiguous fixed grip in an imported
+score. It checks at least three strings, including two fretted strings, and
+leaves ambiguous or changing-fret passages alone. Suggestions are labelled
+**suggested**, never replace written chords and are excluded from saved scores.
+Written shapes, lyrics and instructions are retained in exports.
 
 **Save MIDI (.mid)** exports a Standard MIDI File (type 0) containing the song's
 notes and timing, for compatible DAWs or sequencers. This file is not a stock

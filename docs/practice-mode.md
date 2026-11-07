@@ -441,3 +441,38 @@ type 0 output. It is a standard song file for compatible tools, explicitly not a
 stock FM1 project. Live USB MIDI remains the supported stock-device path, with
 the browser acting as the sequencer. The downloaded file is checked for a valid
 SMF header/track and the chosen base tempo. Source references are linked in README.
+
+## Follow-up: one score with chord shapes, instructions and lyrics
+
+The editor now renders only the shared alphaTab score. The ASCII preview and its
+separate printable sheet have been removed; shorthand input and share links
+remain supported. The shared chord library lives in `practice/chord-library.js`.
+`lesson-converter.js` writes native chord definitions, beat chord references,
+section markers, beat text and lyrics into alphaTex. GP7 and alphaTex exports
+retain these annotations, including chord context over individual picked notes.
+Named sections start at bar boundaries, padding unfinished bars with rests.
+
+`[Verse - C]`, a chord-only header, or `shape: C` sets a visual grip context
+without adding a strum. Instructions/lyrics following a musical line attach to
+that phrase; before any music they wait for the following phrase. Lyrics are
+spread one word per beat, with surplus words grouped on the final beat. These
+are editable draft alignments, not inferred vocal rhythms. Higher-position
+custom diagrams receive the correct first-fret offset.
+
+Both pages expose remembered **Chord diagrams at top** and **Shape hints above
+bars** preferences. The second enables native inline chord diagrams and
+conservative suggested grips for otherwise unlabelled picked bars. The matcher
+requires one fixed fret per observed string, at least three strings, two fretted
+strings and exactly one matching shape. Standard-tuning library shapes and
+authored score definitions are supported; ambiguous, moving or effect-heavy
+passages are skipped. Authored chord changes always win. Suggested definitions
+are clearly labelled and removed from a cloned score before export, leaving
+the displayed model and its audio intact. Changing these display options only
+rerenders notation and does not restart playback or change the played notes.
+
+**Print / PDF** uses alphaTab's complete-score print view, disabling lazy loading
+in that view so long scores print fully. Browser checks cover its diagrams,
+instructions and lyrics, as well as the editor's ordinary print CSS. Native
+alphaTab annotation references:
+[staff chord metadata](https://alphatab.net/docs/alphatex/staff-metadata/),
+[beat text, lyrics and chord properties](https://alphatab.net/docs/alphatex/beat-properties/).

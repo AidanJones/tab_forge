@@ -18,6 +18,21 @@ export function mountPractice(root = document, { embedded = false } = {}) {
   let libraryRequest = 0;
   let sourceRequest = 0;
   let midiKey = '';
+  let scoreDisplay = { chordDiagrams: true, shapeHints: false };
+  try {
+    const saved = JSON.parse(localStorage.getItem('tab-forge:score-display'));
+    if (typeof saved?.chordDiagrams === 'boolean') scoreDisplay.chordDiagrams = saved.chordDiagrams;
+    if (typeof saved?.shapeHints === 'boolean') scoreDisplay.shapeHints = saved.shapeHints;
+  } catch { /* Preferences are optional when browser storage is unavailable. */ }
+  $('score-chords').checked = scoreDisplay.chordDiagrams;
+  $('score-shapes').checked = scoreDisplay.shapeHints;
+  for (const [id,key] of [['score-chords','chordDiagrams'],['score-shapes','shapeHints']]) {
+    $(id).addEventListener('change', () => {
+      scoreDisplay[key] = $(id).checked;
+      try { localStorage.setItem('tab-forge:score-display',JSON.stringify(scoreDisplay)); } catch { /* Optional preference. */ }
+      player?.setScoreDisplay(scoreDisplay);
+    });
+  }
   const midi = new MidiOutput(renderMidi);
   $('midi-channel').replaceChildren(...Array.from({ length: 16 }, (_, i) => option(i + 1, String(i + 1))));
 
@@ -84,6 +99,7 @@ export function mountPractice(root = document, { embedded = false } = {}) {
         player = new PracticePlayer($('score'), render, {
           onMidiEvents: events => midi.forward(events), onSilence: () => midi.panic(),
         });
+        player.setScoreDisplay(scoreDisplay);
         player.setBrowserSound(!midi.enabled || $('midi-monitor').checked);
         return player;
       }).catch(error => {
@@ -129,13 +145,16 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     $('error').textContent = error;
     $('error').hidden = !error;
 
-    for (const id of ['play', 'stop', 'speed', 'loop', 'count-in', 'metronome', 'volume', 'track', 'save-gp', 'save-alphatex', 'save-midi']) {
+    for (const id of ['play', 'stop', 'speed', 'loop', 'count-in', 'metronome', 'volume', 'track', 'save-gp', 'save-alphatex', 'save-midi', 'print-score']) {
       $(id).disabled = !state.ready;
     }
     for (const id of ['from-bar', 'to-bar', 'select-bars', 'clear-range']) {
       $(id).disabled = !state.ready || !state.bars.length;
     }
     $('play').textContent = state.playing ? 'Pause' : 'Play';
+    $('shape-hint-status').textContent = state.suggestedShapes
+      ? `${state.suggestedShapes} suggested ${state.suggestedShapes===1?'grip':'grips'} labelled in the score. Written shapes take priority.`
+      : 'Written shapes take priority; suggestions need an unambiguous fixed grip.';
     $('speed').value = state.speed;
     $('speed-value').textContent = `${state.speed}%`;
     $('loop').checked = state.looping;
@@ -264,6 +283,7 @@ export function mountPractice(root = document, { embedded = false } = {}) {
   }));
 
   $('play').addEventListener('click', () => run(() => player.playPause()));
+  $('print-score').addEventListener('click', () => run(() => player.printScore()));
   for (const [id, format, type] of [['save-gp', 'gp', 'application/octet-stream'], ['save-alphatex', 'alphatex', 'text/plain;charset=utf-8'], ['save-midi', 'mid', 'audio/midi']]) {
     $(id).addEventListener('click', () => run(() => {
       download(player.exportFile(format), scoreFilename(latest.title, format), type);
