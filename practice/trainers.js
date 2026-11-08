@@ -1,6 +1,6 @@
 import { ScaleMap } from './scale-map.js';
 import { CHORD_LIBRARY } from './chord-library.js';
-import { chordExercise, scaleExercise, SCALES, ROOTS, NoteTrainer } from './exercises.js';
+import { chordExercise, scaleExercise, scalePatterns, SCALES, ROOTS, NoteTrainer } from './exercises.js';
 import { midiFrequency, pitchNote } from './pitch.js';
 
 const noteName = midi => { const n=pitchNote(midiFrequency(midi)); return n.name+n.octave; };
@@ -11,8 +11,9 @@ export class Trainers {
     this.$('.trainer-chord').replaceChildren(...Object.keys(CHORD_LIBRARY).map(name=>new Option(name,name)));
     this.$('.trainer-root').replaceChildren(...ROOTS.map((name,i)=>new Option(name,i)));
     this.$('.trainer-scale').replaceChildren(...Object.entries(SCALES).map(([key,scale])=>new Option(scale.name,key)));
+    const patternLabel=document.createElement('label');patternLabel.textContent='Pattern ';const pattern=document.createElement('select');pattern.className='trainer-pattern';pattern.setAttribute('aria-label','Scale pattern');patternLabel.append(pattern);this.$('.trainer-direction').closest('label').after(patternLabel);
     this.$('.trainer-chord').addEventListener('change',()=>this.resetChord());
-    for(const selector of ['.trainer-root','.trainer-scale','.trainer-direction']) this.$(selector).addEventListener('change',()=>this.resetScale());
+    for(const selector of ['.trainer-root','.trainer-scale','.trainer-direction','.trainer-pattern']) this.$(selector).addEventListener('change',()=>this.resetScale());
     this.$('.trainer-reset').addEventListener('click',()=>{this.resetChord();this.resetScale();});
     this.$('.trainer-load').addEventListener('click',()=>this.loadExercise(this.exercise));
     this.$('.trainer-practise').addEventListener('click',()=>this.loadExercise(this.exercise,{wait:true}));
@@ -32,7 +33,11 @@ export class Trainers {
     this.update();
   }
   resetScale() {
-    this.exercise=scaleExercise(Number(this.$('.trainer-root').value),this.$('.trainer-scale').value,this.$('.trainer-direction').value);
+    const previous=this.$('.trainer-pattern').value;
+    const options=scalePatterns(Number(this.$('.trainer-root').value),this.$('.trainer-scale').value);
+    this.$('.trainer-pattern').replaceChildren(...options.map(p=>new Option(p.label,p.id)));
+    this.$('.trainer-pattern').value=options.some(p=>p.id===previous)?previous:'root';
+    this.exercise=scaleExercise(Number(this.$('.trainer-root').value),this.$('.trainer-scale').value,this.$('.trainer-direction').value,this.$('.trainer-pattern').value);
     this.scale.reset(this.exercise.notes);this.scaleMap.update(Number(this.$('.trainer-root').value),this.$('.trainer-scale').value,this.exercise);this.update();
   }
   update(state) {
@@ -53,6 +58,6 @@ export class Trainers {
     sequence.replaceChildren(...notes.map((n,i)=>{
       const cell=document.createElement('span');cell.textContent=`${n.fret} / ${n.string}`;cell.dataset.state=i<trainer.index?'done':i===trainer.index?'next':'waiting';cell.title=`${noteName(n.midi)} · string ${n.string}, fret ${n.fret}`;return cell;
     }));
-    if(this.exercise)this.$('.trainer-scale-description').textContent=`${this.exercise.title}. Two octaves in frets ${this.exercise.base}–${this.exercise.base+4}; standard tuning, no capo. Load the tab for fingering suggestions, audio and scrolling playback.`;
+    if(this.exercise)this.$('.trainer-scale-description').textContent=`${this.exercise.title}. ${this.exercise.description}, frets ${this.exercise.minFret}–${this.exercise.maxFret}; standard tuning, no capo. Load the tab for fingering suggestions, audio and scrolling playback.`;
   }
 }

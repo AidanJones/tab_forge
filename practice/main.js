@@ -30,6 +30,8 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     renderFollowMicrophone(state);
   } });
   trainers = new Trainers($('guitar-tuner'), (exercise, {wait=false} = {}) => {
+    document.dispatchEvent(new CustomEvent('tab-forge:practice-open',{detail:{from:'scales',wait}}));
+    root.querySelector('[data-player-view="score"]').click();
     pendingFollowExercise={title:exercise.title,wait,from:'scales'};
     if (embedded) {
       root.dispatchEvent(new CustomEvent('tab-forge:exercise', { bubbles:true, detail:exercise }));
@@ -53,6 +55,7 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     $('score-viewport').hidden = scrolling;
     for (const other of root.querySelectorAll('[data-player-view]')) other.setAttribute('aria-pressed', String(other === button));
     playAlong.setVisible(scrolling);
+    if(!scrolling)player?.refreshScoreLayout();
   });
   let pendingPlayer;
   let localError = '';
@@ -515,6 +518,8 @@ export function mountPractice(root = document, { embedded = false } = {}) {
   }});
   new RiffLibrary(workflow.riffHost,{
     load:(exercise,{wait=false}={})=>{
+      document.dispatchEvent(new CustomEvent('tab-forge:practice-open',{detail:{from:'riffs',wait}}));
+      root.querySelector('[data-player-view="score"]').click();
       const request=++sourceRequest;
       run(async()=>{
         const instance=await ensurePlayer();if(request!==sourceRequest)return;

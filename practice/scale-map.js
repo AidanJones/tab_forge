@@ -45,7 +45,7 @@ export class ScaleMap {
     }
     const centre=document.createElement('span');centre.className='fifths-centre';centre.textContent='Major / minor';this.$('#fifths-circle').append(centre);
   }
-  update(root,type,exercise){this.root=root;this.type=type;this.exercise=exercise;this.draw();}
+  update(root,type,exercise){if(exercise.maxFret>12)this.$('#scale-map-range').value='24';this.root=root;this.type=type;this.exercise=exercise;this.draw();}
   draw(){
     if(!this.exercise)return;
     const max=Number(this.$('#scale-map-range').value),positions=scalePositions(this.root,this.type,max),board=this.$('#scale-map-board');
@@ -63,7 +63,7 @@ export class ScaleMap {
         }board.append(cell);
       }
     }
-    this.$('.scale-map-title').textContent=`${ROOTS[this.root]} ${SCALES[this.type].name.toLowerCase()} · every position in frets 0–${max}. The outlined practice pattern uses frets ${this.exercise.base}–${this.exercise.base+4}.`;
+    this.$('.scale-map-title').textContent=`${ROOTS[this.root]} ${SCALES[this.type].name.toLowerCase()} · every position in frets 0–${max}. The outlined practice pattern uses frets ${this.exercise.minFret??this.exercise.base}–${this.exercise.maxFret??this.exercise.base+4}.`;
     for(const button of this.host.querySelectorAll('[data-major],[data-minor]'))button.setAttribute('aria-pressed',String(button.dataset.minor!==undefined?this.type==='minor'&&Number(button.dataset.minor)===this.root:this.type!=='minor'&&Number(button.dataset.major)===this.root));
     const key=FIFTHS.find(k=>k.pc===(this.type==='minor'?(this.root+3)%12:this.root));
     this.$('#fifths-detail').textContent=`${key.major} major ↔ ${key.minor} natural minor · key signature ${key.signature}.${!['major','minor'].includes(this.type)?' The selected scale uses a different interval pattern.':''}`;

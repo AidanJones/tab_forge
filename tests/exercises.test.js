@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { importer, Settings } from '@coderline/alphatab';
-import { chordExercise, scaleExercise, SCALES, NoteTrainer, STANDARD_TUNING } from '../practice/exercises.js';
+import { chordExercise, scaleExercise, scalePatterns, SCALES, NoteTrainer, STANDARD_TUNING } from '../practice/exercises.js';
 import { midiFrequency } from '../practice/pitch.js';
 
 test('all 108 two-octave scales contain every intended pitch in a compact playable position and import as real tabs',()=>{
@@ -32,4 +32,25 @@ test('chord checks exclude muted strings and require each correct string pitch i
   assert(trainer.complete);trainer.reset();assert.equal(trainer.index,0);
   const repeats=new NoteTrainer([notes[0],notes[0]]);
   assert(repeats.hear({frequency:midiFrequency(48)}));assert(!repeats.hear({frequency:midiFrequency(48)}));repeats.hear(null);assert(repeats.hear({frequency:midiFrequency(48)}));
+});
+
+
+test('every scale pattern has valid pitches and frets, reverses exactly and imports without losing notes',()=>{
+  for(let root=0;root<12;root++)for(const [type,scale]of Object.entries(SCALES))for(const pattern of scalePatterns(root,type)){
+    const exercise=scaleExercise(root,type,'up',pattern.id),notes=exercise.notes;
+    assert(notes.length>1);
+    for(const [i,n]of notes.entries()){
+      assert(n.fret>=0&&n.fret<=24,`${root} ${type} ${pattern.id}`);
+      assert.equal(n.midi,STANDARD_TUNING[n.string-1]+n.fret);
+      assert(scale.intervals.includes((n.midi-root+120)%12));
+      if(i)assert(n.midi>notes[i-1].midi);
+    }
+    if(pattern.id.startsWith('box')){assert.equal(notes.length,12);for(let string=1;string<=6;string++)assert.equal(notes.filter(n=>n.string===string).length,2);}
+    if(pattern.id==='neck'){assert.equal(notes.at(-1).midi-notes[0].midi,36);assert.equal(notes.at(-1).fret-notes[0].fret,12);assert.equal(notes.length,scale.intervals.length*3+1);}
+    const score=importer.ScoreLoader.loadAlphaTex(exercise.tex,new Settings());
+    const parsed=score.tracks[0].staves[0].bars.flatMap(b=>b.voices[0].beats.flatMap(beat=>beat.notes.map(n=>n.realValue)));
+    assert.deepEqual(parsed,notes.map(n=>n.midi));
+    assert.deepEqual(scaleExercise(root,type,'down',pattern.id).notes,[...notes].reverse());
+    assert.deepEqual(scaleExercise(root,type,'both',pattern.id).notes,[...notes,...notes.slice(0,-1).reverse()]);
+  }
 });

@@ -45,6 +45,15 @@ between note names and degrees. **Circle of fifths** displays major/relative-min
 pairs and their key signatures; selecting a key updates the scale controls.
 These visualisations are also available in the editor's Scales destination.
 
+The **Pattern** selector offers the original two-octave root position, low/open,
+middle, high and upper fret areas, and an **Across the neck** three-octave run
+that shifts hand position. Pentatonic scales also offer all five two-notes-per-string
+boxes. Major pentatonic uses the relative-minor box numbering, explicitly labelled.
+Fret-area and box exercises can begin on another scale tone; gold notes still
+identify the selected root. Direction applies to every pattern. The map outlines
+the selected notes and expands to 24 frets when needed. Loading an exercise opens
+the visible score before rendering; returning from Play-along refreshes its layout.
+
 ### Persistent songs and projects
 
 **Songs → Your songs & saved projects** uses [`songs/songs.json`](songs/songs.json)

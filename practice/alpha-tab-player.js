@@ -13,6 +13,7 @@ const MAX_FILE_BYTES = 50 * 1024 * 1024;
 // alphaTab owns musical state and the audio clock. The UI sees plain view data.
 export class PracticePlayer {
   constructor(element, onChange, { onMidiEvents = () => {}, onSilence = () => {} } = {}) {
+    this.element=element;
     this.onChange = onChange;
     this.onSilence = onSilence;
     this.volume = 65;
@@ -269,6 +270,10 @@ export class PracticePlayer {
 
   printScore() {
     if (this.api.score) this.api.print(undefined, this.scoreDisplay.shapeHints && this.scoreDisplay.fingerExamples ? {display:{stretchForce:Math.max(2,this.standardStretchForce)}} : undefined);
+  }
+
+  refreshScoreLayout() {
+    requestAnimationFrame(()=>{if(!this.disposed&&this.api.score&&this.element.getBoundingClientRect().width>0)this.api.render();});
   }
 
   loadTex(text, source = 'alphaTex score', {title} = {}) {
