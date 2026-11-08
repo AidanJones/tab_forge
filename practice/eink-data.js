@@ -8,11 +8,11 @@ import {DEMO} from './demo.js';
 
 export const readerSongId=id=>createHash('sha256').update(id).digest('hex').slice(0,16);
 export function readerSong(data,id){const song=catalogueEntries(data).find(s=>!s.archived&&readerSongId(s.catalogueId)===id);if(!song)throw new Error('Song not found.');return song;}
-export function readerCatalogue(data,files=[]) {
+export function readerCatalogue(data,files=[],availability=[]) {
   const songs=catalogueEntries(data).filter(s=>!s.archived).map(s=>({
     id:s.catalogueId,readerId:readerSongId(s.catalogueId),title:s.title,artist:s.artist,genre:s.genre,key:s.key,keyValue:songKey(s.key).value,
     bpm:s.bpm,tuning:s.tuning,capo:s.capo,chords:s.chords,techniques:s.techniques,
-    suggested:s.suggested,needs_check:s.needs_check,
+    suggested:s.suggested,needs_check:s.needs_check,hasGp4:(s.guitar_pro_files||[]).some(f=>f.format==='gp4'),localGp4Files:availability.filter(f=>f.songId===s.catalogueId&&f.local).map(f=>f.filename),
   }));
   return {songs,genres:songFilterOptions(songs,'genre'),keys:songFilterOptions(songs,'key'),roots:ROOTS,
     scales:Object.entries(SCALES).map(([id,s])=>({id,name:s.name})),fifths:FIFTHS,
@@ -31,6 +31,10 @@ export function readerScore(bytes,{name='demo',track=0,notation='both'}={}){
   const score=name==='demo'?alphaTab.importer.ScoreLoader.loadAlphaTex(DEMO,settings):
     /\.(tex|alphatex)$/i.test(name)?alphaTab.importer.ScoreLoader.loadAlphaTex(new TextDecoder().decode(bytes),settings):alphaTab.importer.ScoreLoader.loadScoreFromBytes(new Uint8Array(bytes),settings);
   if(!score.tracks[track])throw new Error('Choose an available track.');
+  const stringTracks=score.tracks.filter(t=>t.staves.some(s=>s.tuning.length>0&&!s.isPercussion));
+  const guitarTracks=stringTracks.filter(t=>t.playbackInfo.program>=24&&t.playbackInfo.program<=39);
+  const choices=guitarTracks.length?guitarTracks:stringTracks.length?stringTracks:score.tracks;
+  if(!choices.includes(score.tracks[track])){if(track===0)track=choices[0].index;else throw new Error('Choose a guitar or bass track in the reader, or use the full app for other parts.');}
   for(const staff of score.tracks[track].staves){const tab=staff.tuning.length>0&&!staff.isPercussion;staff.showTablature=tab&&notation!=='sheet';staff.showStandardNotation=!tab||notation!=='tab';}
   const renderer=new alphaTab.rendering.ScoreRenderer(settings);renderer.width=880;
   const pages=[];let header=[];
@@ -42,7 +46,7 @@ export function readerScore(bytes,{name='demo',track=0,notation='both'}={}){
   });
   renderer.renderScore(score,[track]);
   if(header.length){if(pages.length)pages.at(-1).svg+=header.join('');else pages.push({svg:header.join(''),width:880,height:120});}
-  return {title:score.title||name,artist:score.artist,tracks:score.tracks.map((t,i)=>({id:i,name:t.name||`Track ${i+1}`})),track,pages};
+  return {title:score.title||name,artist:score.artist,tracks:choices.map(t=>({id:t.index,name:t.name||`Track ${t.index+1}`})),track,pages};
 }
 
 function plainTab(score,track,first,last){

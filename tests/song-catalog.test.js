@@ -6,19 +6,18 @@ import { importLibrary } from '../practice/library-backup.js';
 import { mergeCatalogues } from '../practice/merge-catalogue.js';
 import { songCatalogue } from '../practice/score-library-plugin.js';
 
-test('updated catalogue uses current metadata while retaining every original project identity',async()=>{
-  const original=JSON.parse(await readFile(new URL('../songs/songs.json',import.meta.url),'utf8'));
-  const updated=JSON.parse(await readFile(new URL('../songs/songs2.json',import.meta.url),'utf8'));
-  const untouched=JSON.stringify([original,updated]),merged=mergeCatalogues(original,updated),entries=catalogueEntries(merged);
+test('the consolidated catalogue preserves every original identity and is the sole runtime source',async()=>{
+  const data=JSON.parse(await readFile(new URL('../songs/songs.json',import.meta.url),'utf8')),entries=catalogueEntries(data);
   assert.equal(filterSongs(entries).length,350);assert.equal(filterSongs(entries,{view:'suggestions'}).length,82);
   assert.equal(entries.length,433);assert.equal(new Set(entries.map(s=>s.catalogueId)).size,433);
-  for(const old of catalogueEntries(original))assert(entries.some(s=>s.catalogueId===old.catalogueId));
-  const chain=entries.find(s=>s.title==='The Chain');assert.equal(chain.catalogueId,'suggestions:s1');assert.equal(chain.suggested,false);assert.equal(chain.id,306);
+  for(let id=1;id<=305;id++)assert(entries.some(s=>s.catalogueId===`songs:${id}`));
+  for(let id=1;id<=128;id++)assert(entries.some(s=>s.catalogueId===`suggestions:s${id}`));
+  assert.equal(entries.find(s=>s.title==='The Chain').catalogueId,'suggestions:s1');
   assert.equal(entries.find(s=>s.catalogueId==='songs:111').title,'Lovefool');
   assert.equal(entries.find(s=>s.catalogueId==='songs:165').title,'Ironic');
   const retired=entries.find(s=>s.catalogueId==='songs:89');assert(retired.archived);assert(!filterSongs(entries,{query:'Holly'}).includes(retired));
-  assert.equal(JSON.stringify([original,updated]),untouched);
-  assert.deepEqual(await songCatalogue(),merged);
+  assert.deepEqual(await songCatalogue(),data);
+  await assert.rejects(readFile(new URL('../songs/songs2.json',import.meta.url)),{code:'ENOENT'});
 });
 
 test('catalogue merge preserves explicit corrections and does not duplicate promoted suggestions',()=>{
@@ -30,14 +29,6 @@ test('catalogue merge preserves explicit corrections and does not duplicate prom
   assert.throws(()=>mergeCatalogues(original,{songs:[update.songs[0],update.songs[0]],suggestions:[]}),/Duplicate/);
 });
 
-test('the supplied catalogue keeps stable distinct identities for 305 songs and 128 suggestions',async()=>{
-  const data=JSON.parse(await readFile(new URL('../songs/songs.json',import.meta.url),'utf8'));
-  const entries=catalogueEntries(data);
-  assert.equal(entries.length,433);assert.equal(new Set(entries.map(s=>s.catalogueId)).size,433);
-  assert.equal(filterSongs(entries).length,305);assert.equal(filterSongs(entries,{view:'suggestions'}).length,128);
-  assert.equal(entries.filter(s=>s.needs_check).length,8);
-  assert.equal(data.songs[0].practice.learning_status,'not started');
-});
 test('search covers artist, chords and techniques; promoted suggestions and personal progress are overlays',()=>{
   const songs=catalogueEntries({songs:[{id:1,title:'One',artist:'Artist',genre:'Rock',chords:['Em'],techniques:['fingerpicking'],practice:{learning_status:'not started'}}],suggestions:[{id:1,title:'Two',artist:'Other',genre:'Folk'}]});
   assert.equal(filterSongs(songs,{query:'ARTIST em fingerpicking',genre:'Rock'}).length,1);
@@ -83,4 +74,13 @@ test('malformed backups are rejected before writing any records',async()=>{
   await assert.rejects(importLibrary(store,file({version:1,projects:[],entries:[]})),/supported/);
   await assert.rejects(importLibrary(store,file({format:'tab-forge-library',version:1,projects:[{id:'p',title:'x',filename:'oops.exe',file:'aGVsbG8='}],entries:[]})),/invalid/);
   assert.equal(writes,0);
+});
+
+
+test('GP4 filters distinguish found sources from locally playable files',()=>{
+ const songs=catalogueEntries({songs:[{id:1,title:'Local'},{id:2,title:'Source only'},{id:3,title:'Not found'}]});
+ const sets={gp4FoundIds:new Set(['songs:1','songs:2']),gp4LocalIds:new Set(['songs:1'])};
+ assert.deepEqual(filterSongs(songs,{...sets,guitarPro:'local'}).map(s=>s.id),[1]);
+ assert.deepEqual(filterSongs(songs,{...sets,guitarPro:'found'}).map(s=>s.id),[1,2]);
+ assert.deepEqual(filterSongs(songs,{...sets,guitarPro:'missing'}).map(s=>s.id),[3]);
 });

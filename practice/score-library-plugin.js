@@ -1,19 +1,13 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
-import { mergeCatalogues } from './merge-catalogue.js';
+import {catalogueEntries} from './song-catalog.js';
 
 const defaultDirectory = fileURLToPath(new URL('../public/scores/', import.meta.url));
 const scoreExtension = /\.(gp[345]?|gpx|xml|musicxml|mxl|tex|alphatex)$/i;
 const songList=fileURLToPath(new URL('../songs/songs.json',import.meta.url));
-const updatedSongList=fileURLToPath(new URL('../songs/songs2.json',import.meta.url));
-
 export async function songCatalogue() {
-  const original=JSON.parse(await readFile(songList,'utf8'));
-  let update;
-  try{update=await readFile(updatedSongList,'utf8');}
-  catch(error){if(error.code==='ENOENT')return original;throw error;}
-  return mergeCatalogues(original,JSON.parse(update));
+  return JSON.parse(await readFile(songList,'utf8'));
 }
 
 export async function listScores(directory = defaultDirectory) {
@@ -21,6 +15,26 @@ export async function listScores(directory = defaultDirectory) {
   return entries.filter(entry => entry.isFile() && scoreExtension.test(entry.name))
     .map(entry => ({ name: entry.name, url: `scores/${encodeURIComponent(entry.name)}` }))
     .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+}
+
+export async function scoreAvailability(data, directory=defaultDirectory) {
+  data=data||await songCatalogue();
+  const files=await listScores(directory),headers=new Map();
+  const result=[];
+  for(const song of catalogueEntries(data))for(const source of song.guitar_pro_files||[]){
+    if(source.format!=='gp4'||!source.filename||/[\\/]/.test(source.filename))continue;
+    const file=files.find(f=>f.name===source.filename);
+    let local=false;
+    if(file){
+      if(!headers.has(file.name)){
+        try{const bytes=await readFile(join(directory,file.name));headers.set(file.name,bytes.subarray(0,32).toString('latin1').includes('FICHIER GUITAR PRO v4'));}
+        catch{headers.set(file.name,false);}
+      }
+      local=headers.get(file.name);
+    }
+    result.push({...source,songId:song.catalogueId,local,url:local?file.url:null});
+  }
+  return result;
 }
 
 // Serve library files explicitly in development: Vite's public-file cache and
@@ -45,6 +59,10 @@ export function scoreLibrary() {
             response.setHeader('Content-Type', 'application/json; charset=utf-8');
             return response.end(request.method === 'HEAD' ? undefined : JSON.stringify(scores));
           }
+          if(path==='/scores/availability.json'){
+            response.setHeader('Content-Type','application/json; charset=utf-8');
+            return response.end(request.method==='HEAD'?undefined:JSON.stringify(await scoreAvailability()));
+          }
           const name = decodeURIComponent(path.slice('/scores/'.length));
           // Only serve regular score files found directly in our fixed folder.
           if (name.includes('/') || name.includes('\\') || !scores.some(score => score.name === name)) {
@@ -64,6 +82,7 @@ export function scoreLibrary() {
     async generateBundle() {
       this.emitFile({type:'asset',fileName:'song-library/catalog.json',source:JSON.stringify(await songCatalogue())});
       this.emitFile({ type: 'asset', fileName: 'scores/catalog.json', source: JSON.stringify(await listScores()) });
+      this.emitFile({type:'asset',fileName:'scores/availability.json',source:JSON.stringify(await scoreAvailability())});
     },
   };
 }

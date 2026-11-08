@@ -30,3 +30,13 @@ test('Kindle score pages are prepared on the server with notation, track and pla
   await page.getByRole('button',{name:'Show controls',exact:true}).click();await page.getByLabel('Track',{exact:true}).selectOption('1');await page.getByRole('button',{name:'Read selected track'}).click();await expect(page.locator('.reader-score svg').first()).toBeVisible();
   await page.getByRole('button',{name:'Show browser feature report'}).click();await expect(page.locator('#reader-report')).toContainText('Audio API: not exposed');
 });
+
+test('a locally available GP4 can open from its Kindle song entry with a guitar part selected',async({page})=>{
+  const data=await (await page.request.get('/eink/catalog.json')).json();
+  const chain=data.songs.find(s=>s.title==='The Chain');
+  test.skip(!chain?.localGp4Files?.length,'The ignored GP4 download is not present in this checkout.');
+  await limitedBrowser(page);await page.goto('/kindle.html');await expect(page.locator('#reader-status')).toHaveText('Ready.');
+  await page.getByLabel('Search songs').fill('The Chain');await page.getByLabel('Guitar Pro files',{exact:true}).selectOption('local');await page.getByRole('button',{name:'Apply filters',exact:true}).click();
+  await page.getByRole('button',{name:'View song',exact:true}).click();await page.getByRole('button',{name:'Read GP4 on Kindle',exact:true}).click();
+  await expect(page.locator('.reader-score svg').first()).toBeVisible();await expect(page.locator('select[aria-label="Track"] option:checked')).toContainText(/guitar/i);
+});

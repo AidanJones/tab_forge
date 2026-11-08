@@ -21,8 +21,9 @@ The reader offers the song catalogue (genre/key/search, resources and local note
 all generated scale patterns, natural-note maps, a static fifths reference, and
 original riff exercises. **Scores** reads files from the laptop's `public/scores`
 folder, including Guitar Pro, MusicXML and alphaTex. The laptop prepares static SVG
-systems on demand in development; production builds include the prepared pages.
-Choose a track and Tab / Sheet / Both, then **Focus score** for a clean reading
+systems on demand in development; production builds include the prepared pages. Preparation runs in isolated,
+time-limited laptop workers so a problematic legacy track cannot freeze the build.
+Choose a guitar/bass track and Tab / Sheet / Both, then **Focus score** for a clean reading
 screen. The simplified plain-tab fallback shows first-voice string/fret columns;
 use the engraved score for rhythm, repeats, other voices and techniques.
 
@@ -96,16 +97,22 @@ the visible score before rendering; returning from Play-along refreshes its layo
 ### Persistent songs and projects
 
 **Songs → Your songs & saved projects** uses [`songs/songs.json`](songs/songs.json)
-as the original identity baseline and merges the updated `songs/songs2.json`
-when present (currently 350 songs and 82 suggestions), keeping My songs and
-Suggestions separate. Updated metadata wins; promoted suggestions retain their
-old internal identity, so attached scores and practice notes stay linked.
-Removed entries remain available from existing saved projects. Both source
-files are preserved. Search by title,
+as the single consolidated catalogue (350 songs and 82 suggestions). The former
+`songs2.json` update has been merged into it and removed. Stable internal
+`catalogue_id` values preserve old score attachments and progress, including
+suggestions moved into My songs. Removed entries remain available from existing
+saved projects under `retired`.
+Search by title,
 artist, chord, technique or source, then combine **Genre**, **Key** and **Progress**
 filters. **More filters** adds instrument, tuning, technique, a required chord and
 **Has a saved score**. Key spellings such as C#m / D-flat minor are grouped;
 missing keys and tunings stay **Unknown / not listed**, never inferred from chords.
+**Guitar Pro files** distinguishes **GP4 ready to play** (in the server folder or
+this browser), **GP4 source found** (verified source metadata, including files not
+present on this server) and **No GP4 found yet**. Song details show an **Open GP4**
+button for server files, keeping them associated with the song and saving a browser
+project when loaded. Source links are retained. **Has a saved score** remains a
+separate browser-project filter.
 Only metadata present in the catalogue is offered. Sort by title, artist or tempo
 (unknown tempos last), or keep the catalogue order. **Clear filters** resets the
 search, sorting and all filters. In song details, **Previous song / Next song**
@@ -595,3 +602,20 @@ The repository includes example scripts:
 
 See LICENSE file for details.
 Browser dependency notices are included in `public/licenses`.
+
+
+### Verified GP4 downloads
+
+The first catalogue search pass covers Fleetwood Mac, Nirvana, Radiohead and Green
+Day. It obtained 22 public GP4 downloads and registered the existing user-provided
+Landslide file. Each downloaded file passed the Guitar Pro v4 header check and
+alphaTab import; musical/transcription accuracy is not certified. A found file may
+be a partial or alternate arrangement. Source URLs, original download URLs, hashes,
+track/bar counts and check dates are stored under `guitar_pro_files` in `songs.json`.
+
+Binaries stay under `public/scores` and are ignored by Git. On another checkout,
+`node scripts/download-gp4.mjs` restores the known public downloads; it validates
+headers, hashes and imports, and leaves existing files unchanged. Public pages
+that require authentication or are inaccessible are not bypassed. The app checks
+actual local GP4 headers instead of treating a source link as a playable file.
+The Kindle reader offers the same availability filter and Read GP4 action.

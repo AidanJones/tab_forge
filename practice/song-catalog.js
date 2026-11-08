@@ -33,7 +33,7 @@ export function songFilterOptions(songs,field) {
   }
   return [...options].map(([value,label])=>({value,label})).sort((a,b)=>a.value===UNKNOWN_METADATA?1:b.value===UNKNOWN_METADATA?-1:a.label.localeCompare(b.label,undefined,{numeric:true}));
 }
-export function filterSongs(songs, {query='',genre='',key='',instrument='',tuning='',technique='',chord='',hasScore=false,scoreIds=new Set(),status='',view='songs',states={}}={}) {
+export function filterSongs(songs, {query='',genre='',key='',instrument='',tuning='',technique='',chord='',guitarPro='',gp4FoundIds=new Set(),gp4LocalIds=new Set(),hasScore=false,scoreIds=new Set(),status='',view='songs',states={}}={}) {
   const words=query.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
   return songs.filter(song=>{
     if(song.archived)return false;
@@ -47,6 +47,9 @@ export function filterSongs(songs, {query='',genre='',key='',instrument='',tunin
     if(technique&&!song.techniques?.includes(technique))return false;
     if(chord&&!song.chords?.includes(chord))return false;
     if(hasScore&&!scoreIds.has(song.catalogueId))return false;
+    if(guitarPro==='local'&&!gp4LocalIds.has(song.catalogueId))return false;
+    if(guitarPro==='found'&&!gp4FoundIds.has(song.catalogueId))return false;
+    if(guitarPro==='missing'&&gp4FoundIds.has(song.catalogueId))return false;
     if(status&&(saved.practice?.learning_status||song.practice?.learning_status||'not started')!==status)return false;
     const haystack=[song.title,song.artist,song.genre,song.key,song.instrument,song.tuning,song.source,song.album,...(song.tags||[]),...(song.chords||[]),...(song.techniques||[])].join(' ').toLocaleLowerCase();
     return words.every(word=>haystack.includes(word));

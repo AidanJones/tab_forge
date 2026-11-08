@@ -1,32 +1,28 @@
 # Song catalogue
 
-`songs.json` is the original catalogue (305 songs and 128 suggestions).
-`songs2.json` is the updated list (350 songs and 82 suggestions). Both source
-files are kept intact. The app merges them when serving
-`/song-library/catalog.json` in development and when building the production asset.
-If the update file is absent, it falls back to the original list.
+`songs.json` is the single catalogue, consolidated from the former original list
+and `songs2.json` update: 350 songs, 82 suggestions and one retired entry. The
+redundant update file has been removed. Edit this file going forward; the app
+serves it at `/song-library/catalog.json` and includes it in production builds.
 
-The update supplies current titles, metadata, resource links and membership in
-My songs / Suggestions. Existing IDs within a group are retained, including
-corrected titles. Entries moved from Suggestions to My songs are matched by
-title and artist and keep their original internal `catalogue_id` (for example,
-The Chain keeps `suggestions:s1` even though its new source ID is 306). This
-preserves existing browser score attachments, promotions, notes and progress
-without rewriting or migrating personal data.
+Keep `catalogue_id` stable independently of the displayed source `id`. The Chain,
+for example, has source ID 306 but keeps internal identity `suggestions:s1` after
+moving into My songs. This preserves attached scores, notes and progress without
+rewriting browser data. Retired records remain resolvable from saved projects but
+are hidden from normal browsing.
 
-Entries absent from the update are retained under `retired` in the generated
-catalogue, hidden from browsing but still resolvable from saved projects. The
-current update retires Holly by Nirvana. IDs should remain stable in future edits;
-keep the original catalogue as the identity baseline. The merge is deliberately
-conservative: it does not guess artist/title spelling matches beyond case and
-surrounding whitespace. Duplicate internal identities fail validation.
+`guitar_pro_files` lists verified GP4 source/download URLs, filenames, SHA-256
+hashes, check dates and imported track/bar counts. Actual score binaries are kept
+in `public/scores` and ignored by Git. The availability endpoint checks which
+registered files are physically present and have a GP4 header. A source found on
+the web is distinct from a locally playable file. Use the library's Guitar Pro
+files filter, Open GP4 action, or the Kindle reader's Read GP4 action.
 
-Metadata and links are supplied data, not newly verified by this merge. Links
-reference external pages, not score files the player can import. Download a
-compatible score yourself, then attach it to its catalogue entry.
+The initial search found 22 downloads across Fleetwood Mac, Nirvana, Radiohead
+and Green Day; the existing Landslide file is also registered. The remaining songs
+are not claimed to have had an exhaustive search. `node scripts/download-gp4.mjs`
+restores known downloads after cloning; source metadata is tracked, binaries are
+not. Import validation checks format/readability, not transcription accuracy.
 
-Personal progress, saved score files and playback checkpoints stay in browser
-IndexedDB. Use **Backup & refresh → Export library backup** to retain or transfer
-that work. **Refresh catalogue** reloads the merged data after repository edits.
-The catalogue is included in the client build; publishing the app does not upload
-browser projects or practice notes.
+Personal progress, saved score files and checkpoints remain in browser IndexedDB.
+Use Backup & refresh to export backups or refresh source/file availability.

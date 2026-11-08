@@ -34,7 +34,8 @@ colour-only meanings or a continuously running timer. The natural-note map is
 split into fret ranges. Scale roots carry an R and a black background; thick
 borders identify selected-pattern notes. The fifths reference uses a static table.
 
-Score layout runs on the laptop through alphaTab's headless SVG renderer. Each
+Score layout runs on the laptop through alphaTab's headless SVG renderer. Guitar/bass parts are preferred over vocals and percussion; the full app still
+offers all tracks. Each
 track/notation combination has a small manifest and separately requested systems.
 SVG viewBoxes allow scaling; the music font uses WOFF, with a plain text fallback
 for font/rendering trouble. Production builds emit the same data/pages and need
@@ -58,3 +59,9 @@ These are browser simulations, not a physical Scribe or old-WebKit certification
 The remaining device check is to load the Network URL, verify text/music glyphs,
 page-turn responsiveness, local note persistence and touch targets. Audio/mic/
 MIDI/3D support on the Scribe remains unverified and is not required by the reader.
+
+
+After adding a larger GP4 collection, preparation moved into isolated Node workers
+with per-track time limits. Failed legacy parts produce a readable error asset
+rather than blocking the build. This is server-side work; the Kindle still uses
+no worker API. Very dense bars can still need the plain-tab fallback.

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {readerCatalogue,readerSong,readerScale,readerScore} from '../practice/eink-data.js';
 import {songCatalogue} from '../practice/score-library-plugin.js';
+import {DEMO} from '../practice/demo.js';
 
 test('reader catalogue is compact, retains stable IDs and loads resources separately',async()=>{
   const source=await songCatalogue(),catalogue=readerCatalogue(source);
@@ -28,4 +29,10 @@ test('reader entry and script avoid module loading and modern JavaScript syntax'
   const script=await readFile(new URL('../public/kindle/reader.js',import.meta.url),'utf8');
   assert.doesNotThrow(()=>new Function(script));assert(!/\b(?:const|let|async|await|import|export)\s|=>|\?\.|\.replaceAll\(|\bfetch\(/.test(script));
   const html=await readFile(new URL('../public/kindle.html',import.meta.url),'utf8');assert(!html.includes('type="module"'));assert(html.includes('<noscript>'));
+});
+
+test('reader prefers guitar/bass tracks over a vocal part at index zero',()=>{
+  const tex=DEMO.replace('\\instrument 25','\\instrument 73').replace('\\track "Guitar"','\\track "Voice"');
+  const rendered=readerScore(new TextEncoder().encode(tex),{name:'arrangement.tex'});
+  assert.equal(rendered.track,1);assert.equal(rendered.tracks[0].name,'Bass');
 });

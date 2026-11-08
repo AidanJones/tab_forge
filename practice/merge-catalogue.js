@@ -5,7 +5,7 @@ const name=song=>JSON.stringify([song.title?.trim().toLocaleLowerCase(),song.art
 // The latest list owns metadata and membership; the original owns identities.
 // In particular, moving a suggestion into Songs must not orphan saved scores.
 export function mergeCatalogues(original,updated) {
-  const previous=groups.flatMap(group=>(original[group]||[]).map(song=>({group,song,key:identity(group,song)})));
+  const previous=[...groups,'retired'].flatMap(group=>(original[group]||[]).map(song=>({group,song,key:identity(group,song)})));
   const used=new Set();
   const result={...updated,genres:[...new Set([...(original.genres||[]),...(updated.genres||[])])]};
   for(const group of groups){
