@@ -57,7 +57,12 @@ the visible score before rendering; returning from Play-along refreshes its layo
 ### Persistent songs and projects
 
 **Songs → Your songs & saved projects** uses [`songs/songs.json`](songs/songs.json)
-as its catalogue, keeping My songs and Suggestions separate. Search by title,
+as the original identity baseline and merges the updated `songs/songs2.json`
+when present (currently 350 songs and 82 suggestions), keeping My songs and
+Suggestions separate. Updated metadata wins; promoted suggestions retain their
+old internal identity, so attached scores and practice notes stay linked.
+Removed entries remain available from existing saved projects. Both source
+files are preserved. Search by title,
 artist, chord or technique, filter by genre/progress, and open a song to find its
 tab/tutorial/video links. Add a suggestion to My songs without changing the
 source JSON. Catalogue metadata and links are supplied data, not newly verified

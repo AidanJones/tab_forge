@@ -3,6 +3,32 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { catalogueEntries, filterSongs, safeResourceUrl, captureSession } from '../practice/song-catalog.js';
 import { importLibrary } from '../practice/library-backup.js';
+import { mergeCatalogues } from '../practice/merge-catalogue.js';
+import { songCatalogue } from '../practice/score-library-plugin.js';
+
+test('updated catalogue uses current metadata while retaining every original project identity',async()=>{
+  const original=JSON.parse(await readFile(new URL('../songs/songs.json',import.meta.url),'utf8'));
+  const updated=JSON.parse(await readFile(new URL('../songs/songs2.json',import.meta.url),'utf8'));
+  const untouched=JSON.stringify([original,updated]),merged=mergeCatalogues(original,updated),entries=catalogueEntries(merged);
+  assert.equal(filterSongs(entries).length,350);assert.equal(filterSongs(entries,{view:'suggestions'}).length,82);
+  assert.equal(entries.length,433);assert.equal(new Set(entries.map(s=>s.catalogueId)).size,433);
+  for(const old of catalogueEntries(original))assert(entries.some(s=>s.catalogueId===old.catalogueId));
+  const chain=entries.find(s=>s.title==='The Chain');assert.equal(chain.catalogueId,'suggestions:s1');assert.equal(chain.suggested,false);assert.equal(chain.id,306);
+  assert.equal(entries.find(s=>s.catalogueId==='songs:111').title,'Lovefool');
+  assert.equal(entries.find(s=>s.catalogueId==='songs:165').title,'Ironic');
+  const retired=entries.find(s=>s.catalogueId==='songs:89');assert(retired.archived);assert(!filterSongs(entries,{query:'Holly'}).includes(retired));
+  assert.equal(JSON.stringify([original,updated]),untouched);
+  assert.deepEqual(await songCatalogue(),merged);
+});
+
+test('catalogue merge preserves explicit corrections and does not duplicate promoted suggestions',()=>{
+  const original={songs:[{id:1,title:'Incorrect',artist:'Band',needs_check:true,notes:'Check this'}],suggestions:[{id:'s1',title:'Song',artist:'Band'}]};
+  const update={songs:[{id:1,title:'Corrected',artist:'Band',needs_check:false,notes:null},{id:2,title:'Song',artist:'Band'}],suggestions:[]};
+  const merged=mergeCatalogues(original,update);
+  assert.equal(merged.songs[0].notes,null);assert.equal(merged.songs[0].needs_check,false);
+  assert.equal(merged.songs[1].catalogue_id,'suggestions:s1');assert.equal(merged.retired.length,0);
+  assert.throws(()=>mergeCatalogues(original,{songs:[update.songs[0],update.songs[0]],suggestions:[]}),/Duplicate/);
+});
 
 test('the supplied catalogue keeps stable distinct identities for 305 songs and 128 suggestions',async()=>{
   const data=JSON.parse(await readFile(new URL('../songs/songs.json',import.meta.url),'utf8'));

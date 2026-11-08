@@ -1,12 +1,13 @@
 export const LEARNING_STATUSES=['not started','learning','comfortable','learned'];
 export function catalogueEntries(data) {
-  return ['songs','suggestions'].flatMap(group=>(data[group]||[]).map(song=>({
-    ...song, catalogueId:`${group}:${song.id}`, suggested:group==='suggestions',
+  return ['songs','suggestions','retired'].flatMap(group=>(data[group]||[]).map(song=>({
+    ...song, catalogueId:song.catalogue_id||`${group}:${song.id}`, suggested:group==='suggestions', archived:group==='retired',
   })));
 }
 export function filterSongs(songs, {query='',genre='',status='',view='songs',states={}}={}) {
   const words=query.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
   return songs.filter(song=>{
+    if(song.archived)return false;
     const saved=states[song.catalogueId]||{};
     const suggested=song.suggested&&!saved.promoted;
     if(view==='suggestions'?!suggested:suggested)return false;

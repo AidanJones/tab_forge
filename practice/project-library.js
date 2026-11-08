@@ -60,7 +60,7 @@ export class ProjectLibrary {
       const linked=this.songs.find(s=>s.catalogueId===p.songId);
       return `${p.title} ${p.artist} ${p.filename} ${linked?.title||''} ${linked?.artist||''}`.toLocaleLowerCase().includes(query.toLocaleLowerCase());
     }):filterSongs(this.songs,{query,view:this.view,genre:this.host.querySelector('#song-genre').value,status:this.host.querySelector('#song-status').value,states:this.states});
-    this.host.querySelector('.project-library-count').textContent=recent?`${list.length} saved ${list.length===1?'project':'projects'}${query?` matching · ${this.projects.length} total`:''} in this browser`:`${list.length} ${this.view==='suggestions'?'suggestions':list.length===1?'song':'songs'} · ${this.songs.filter(s=>!s.suggested).length} in your source catalogue`;
+    this.host.querySelector('.project-library-count').textContent=recent?`${list.length} saved ${list.length===1?'project':'projects'}${query?` matching · ${this.projects.length} total`:''} in this browser`:`${list.length} ${this.view==='suggestions'?'suggestions':list.length===1?'song':'songs'} · ${this.songs.filter(s=>!s.suggested&&!s.archived).length} in your source catalogue`;
     if(!list.length){target.append(node('p',recent?'Open a score to keep it here, or browse My songs to attach a score to your list.':'No matches. Try another search or filter.','library-empty'));return;}
     this.page=Math.min(this.page,Math.max(0,Math.ceil(list.length/12)-1));
     const start=this.page*12;
@@ -77,6 +77,7 @@ export class ProjectLibrary {
     const id=song.catalogueId,practice={...song.practice,...this.states[id]?.practice};
     target.append(button('← Back to results',()=>{this.selected=null;this.render();}),node('h3',song.title),node('p',song.artist));
     if(song.needs_check)target.append(node('p','Some catalogue details need checking.','library-notice'));
+    if(song.archived)target.append(node('p','This entry was removed from the updated catalogue. Your saved score and practice notes are still available here.','library-notice'));
     const facts=[song.genre&&`Genre: ${song.genre}`,song.album&&`Album: ${song.album}${song.year?` (${song.year})`:''}`,song.original_artist&&`Originally by: ${song.original_artist}`,song.source&&`From: ${song.source}`,song.key&&`Key: ${song.key}`,song.bpm&&`Original tempo: ${song.bpm} BPM`,song.tuning&&`Tuning: ${song.tuning}`,song.capo!==null&&song.capo!==undefined&&`Capo: ${song.capo}`,song.techniques?.length&&`Techniques: ${song.techniques.join(', ')}`,song.chords?.length&&`Chords: ${song.chords.join(', ')}`].filter(Boolean);
     for(const fact of facts)target.append(node('p',fact,'song-fact'));
     if(song.notes)target.append(node('p',song.notes));
