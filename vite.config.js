@@ -1,11 +1,12 @@
 import { defineConfig } from 'vite';
 import { alphaTab } from '@coderline/alphatab-vite';
 import { fileURLToPath } from 'node:url';
+import { einkReader } from './practice/eink-plugin.js';
 import { scoreLibrary } from './practice/score-library-plugin.js';
 
 export default defineConfig({
   base: './',
-  plugins: [alphaTab(), scoreLibrary()],
+  plugins: [alphaTab(), scoreLibrary(), einkReader()],
   build: {
     rollupOptions: {
       input: {

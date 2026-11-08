@@ -9,6 +9,45 @@ score, plays Guitar Pro files at adjustable speed, loops passages and provides
 chord diagrams and a fretting-hand guide. The original Python PDF tools remain
 available for existing lesson files.
 
+## Kindle Scribe / e-ink
+
+Use the **Kindle / e-ink reader** link on any page, or open `/kindle.html`.
+This separate reader uses classic ES5 JavaScript, XMLHttpRequest, simple tables,
+black-and-white styling and large controls. It does not load the full player,
+Three.js, SoundFont, workers or browser modules. Filtering updates only when you
+press Apply; scales, riffs and scores use explicit page turns.
+
+The reader offers the song catalogue (genre/key/search, resources and local notes),
+all generated scale patterns, natural-note maps, a static fifths reference, and
+original riff exercises. **Scores** reads files from the laptop's `public/scores`
+folder, including Guitar Pro, MusicXML and alphaTex. The laptop prepares static SVG
+systems on demand in development; production builds include the prepared pages.
+Choose a track and Tab / Sheet / Both, then **Focus score** for a clean reading
+screen. The simplified plain-tab fallback shows first-voice string/fret columns;
+use the engraved score for rhythm, repeats, other voices and techniques.
+
+For the Kindle to reach your laptop:
+
+1. Connect both devices to the same Wi-Fi.
+2. Run `pnpm dev:lan` on the laptop (or add `--port 5174 --strictPort` when 5173 is
+   already in use).
+3. On the Kindle open the printed Network URL with `/kindle.html` appended.
+   `127.0.0.1` on the Kindle refers to the Kindle itself, not the laptop.
+4. If Windows asks about Node network access, allow your private home network.
+
+Scores saved only in the laptop browser are not synced to the Kindle. Download
+one from its saved-project details and place it in `public/scores`, then Refresh
+list in the reader. The Kindle's notes and reading-position bookmarks stay in
+its own browser. Use **Connection & browser help → Show browser feature report**
+to inspect the device without requesting microphone or MIDI permissions.
+
+This is a read-and-practise companion. Editing, audio, microphone checking,
+animated play-along, USB MIDI and 3D hand views stay in the full laptop app.
+Browser/API support varies with Kindle firmware; API exposure is not a successful
+hardware test. Automated checks cover modern Edge with media/worker/IndexedDB/
+fetch APIs disabled, static production assets and Scribe-sized layouts. Physical
+Kindle testing is still needed. See [the compatibility review](docs/kindle-review.md).
+
 ## Browser practice
 
 ### Riffs and fretboard notes
