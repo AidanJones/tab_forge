@@ -1,5 +1,5 @@
 import { ProjectStore } from './project-store.js';
-import { catalogueEntries, filterSongs, safeResourceUrl, captureSession, LEARNING_STATUSES } from './song-catalog.js';
+import { catalogueEntries, filterSongs, sortSongs, songKey, songFilterOptions, safeResourceUrl, captureSession, LEARNING_STATUSES } from './song-catalog.js';
 import { download } from './download.js';
 import { exportLibrary, importLibrary } from './library-backup.js';
 
@@ -26,12 +26,13 @@ export class ProjectLibrary {
     catch{this.message('Browser storage is unavailable. Scores still play, but projects cannot be kept here.');}
   }
   mount() {
-    this.host.innerHTML=`<div class="project-library-tabs" role="group" aria-label="Song library views"></div><div class="project-library-filters"><label>Search <input id="song-search" type="search" placeholder="Title, artist, chord or technique"></label><label>Genre <select id="song-genre"><option value="">All genres</option></select></label><label>Progress <select id="song-status"><option value="">Any progress</option></select></label></div><p class="project-library-count"></p><div class="project-library-results"></div><div class="project-library-pages"></div><p class="project-library-status" role="status"></p><input id="attach-score-file" type="file" accept=".gp3,.gp4,.gp5,.gpx,.gp,.xml,.musicxml,.mxl,.tex,.alphatex" hidden>`;
+    this.host.innerHTML=`<div class="project-library-tabs" role="group" aria-label="Song library views"></div><div class="project-library-filters"><label>Search <input id="song-search" type="search" placeholder="Title, artist, chord, technique or source"></label><label>Genre <select id="song-genre"><option value="">All genres</option></select></label><label>Key <select id="song-key"><option value="">All keys</option></select></label><label>Progress <select id="song-status"><option value="">Any progress</option></select></label><label>Sort by <select id="song-sort"><option value="catalogue">Catalogue order</option><option value="title">Title · A–Z</option><option value="artist">Artist · A–Z</option><option value="bpm">Tempo · slowest first</option></select></label><details class="song-more-filters"><summary>More filters</summary><div class="song-extra-filters"><label>Instrument <select id="song-instrument"><option value="">All instruments</option></select></label><label>Tuning <select id="song-tuning"><option value="">All tunings</option></select></label><label>Technique <select id="song-technique"><option value="">All techniques</option></select></label><label>Contains chord <select id="song-chord"><option value="">Any chord</option></select></label><label class="song-score-filter"><input id="song-has-score" type="checkbox"> Has a saved score</label></div><p>Filters combine. Missing keys and tunings stay unknown; the app does not guess them.</p></details><button id="song-clear-filters" type="button">Clear filters</button></div><p class="project-library-count" role="status" aria-live="polite"></p><div class="project-library-results"></div><div class="project-library-pages"></div><p class="project-library-status" role="status"></p><input id="attach-score-file" type="file" accept=".gp3,.gp4,.gp5,.gpx,.gp,.xml,.musicxml,.mxl,.tex,.alphatex" hidden>`;
     for(const [key,label]of [['recent','Recent projects'],['songs','My songs'],['suggestions','Suggestions']]){
       const tab=button(label,()=>{this.view=key;this.page=0;this.selected=null;this.render();});tab.dataset.libraryView=key;this.host.querySelector('.project-library-tabs').append(tab);
     }
     for(const status of LEARNING_STATUSES)this.host.querySelector('#song-status').append(new Option(status,status));
-    for(const input of this.host.querySelectorAll('.project-library-filters input,.project-library-filters select'))input.addEventListener(input.tagName==='INPUT'?'input':'change',()=>{this.page=0;this.selected=null;this.render();});
+    for(const input of this.host.querySelectorAll('.project-library-filters input,.project-library-filters select'))input.addEventListener(input.tagName==='INPUT'&&input.type!=='checkbox'?'input':'change',()=>{this.page=0;this.selected=null;this.render();});
+    this.host.querySelector('#song-clear-filters').addEventListener('click',()=>{for(const input of this.host.querySelectorAll('.project-library-filters input,.project-library-filters select')){if(input.type==='checkbox')input.checked=false;else input.value=input.id==='song-sort'?'catalogue':'';}this.page=0;this.render();});
     this.host.querySelector('#attach-score-file').addEventListener('change',event=>{const file=event.target.files[0];event.target.value='';if(file)this.onFile(file,this.attachSong);});
     const backups=node('details',undefined,'library-backups');backups.append(node('summary','Backup & refresh'));
     backups.append(button('Export library backup',()=>this.action(async()=>{this.message('Preparing library backup…');download(await exportLibrary(this.store),'tab-forge-library.json','application/json');this.message('Backup downloaded, including your saved scores and practice notes.');})));
@@ -41,9 +42,11 @@ export class ProjectLibrary {
     backups.append(node('p','Projects are saved in this browser, separately from songs.json. Export a backup before clearing browser data or moving to another browser.'));this.host.append(backups);
   }
   fillGenres() {
-    const select=this.host.querySelector('#song-genre'),previous=select.value;select.replaceChildren(new Option('All genres',''));
-    for(const genre of [...new Set(this.songs.map(s=>s.genre).filter(Boolean))].sort())select.append(new Option(genre,genre));
-    if([...select.options].some(option=>option.value===previous))select.value=previous;
+    for(const [field,label]of [['genre','All genres'],['key','All keys'],['instrument','All instruments'],['tuning','All tunings'],['technique','All techniques'],['chord','Any chord']]){
+      const select=this.host.querySelector(`#song-${field}`),previous=select.value;select.replaceChildren(new Option(label,''));
+      for(const option of songFilterOptions(this.songs,field))select.append(new Option(option.label,option.value));
+      if([...select.options].some(option=>option.value===previous))select.value=previous;
+    }
   }
   render() {
     if(!this.host)return;
@@ -54,12 +57,19 @@ export class ProjectLibrary {
     const recent=this.view==='recent';
     this.host.querySelector('#song-genre').closest('label').hidden=recent;
     this.host.querySelector('#song-status').closest('label').hidden=recent;
+    for(const id of ['song-key','song-sort'])this.host.querySelector(`#${id}`).closest('label').hidden=recent;
+    this.host.querySelector('.song-more-filters').hidden=recent;
+    const extraCount=['instrument','tuning','technique','chord'].filter(field=>this.host.querySelector(`#song-${field}`).value).length+Number(this.host.querySelector('#song-has-score').checked);
+    this.host.querySelector('.song-more-filters summary').textContent=`More filters${extraCount?` (${extraCount})`:''}`;
     if(this.selected){this.host.querySelector('.project-library-count').textContent='Song details & practice';this.detail(target,this.selected);return;}
     const query=this.host.querySelector('#song-search').value;
     const list=recent?this.projects.filter(p=>{
       const linked=this.songs.find(s=>s.catalogueId===p.songId);
       return `${p.title} ${p.artist} ${p.filename} ${linked?.title||''} ${linked?.artist||''}`.toLocaleLowerCase().includes(query.toLocaleLowerCase());
-    }):filterSongs(this.songs,{query,view:this.view,genre:this.host.querySelector('#song-genre').value,status:this.host.querySelector('#song-status').value,states:this.states});
+    }):sortSongs(filterSongs(this.songs,{query,view:this.view,
+      ...Object.fromEntries(['genre','key','status','instrument','tuning','technique','chord'].map(field=>[field,this.host.querySelector(`#song-${field}`).value])),
+      hasScore:this.host.querySelector('#song-has-score').checked,scoreIds:new Set(this.projects.map(p=>p.songId)),states:this.states}),this.host.querySelector('#song-sort').value);
+    if(!recent)this.filteredSongs=list;
     this.host.querySelector('.project-library-count').textContent=recent?`${list.length} saved ${list.length===1?'project':'projects'}${query?` matching · ${this.projects.length} total`:''} in this browser`:`${list.length} ${this.view==='suggestions'?'suggestions':list.length===1?'song':'songs'} · ${this.songs.filter(s=>!s.suggested&&!s.archived).length} in your source catalogue`;
     if(!list.length){target.append(node('p',recent?'Open a score to keep it here, or browse My songs to attach a score to your list.':'No matches. Try another search or filter.','library-empty'));return;}
     this.page=Math.min(this.page,Math.max(0,Math.ceil(list.length/12)-1));
@@ -67,7 +77,7 @@ export class ProjectLibrary {
     for(const item of list.slice(start,start+12)){
       const row=node('article',undefined,'project-library-row');const text=node('div');text.append(node('strong',item.title),node('span',item.artist||item.filename||''));
       if(recent){text.append(node('small',`${item.filename} · last opened ${new Date(item.lastOpenedAt).toLocaleDateString()}`));row.append(text,button('Resume',()=>this.open(item)),button('Details',()=>{this.selected={project:item};this.render();}));}
-      else {const progress=this.states[item.catalogueId]?.practice||item.practice;text.append(node('small',`${item.genre||'Unsorted'} · ${progress?.learning_status||'not started'}${item.needs_check?' · details need checking':''}`));row.append(text,button('View song',()=>{this.selected={song:item};this.render();}));}
+      else {const progress=this.states[item.catalogueId]?.practice||item.practice;text.append(node('small',`${item.genre||'Unsorted'} · ${item.key?songKey(item.key).label:'Key not listed'}${item.bpm?` · ${item.bpm} BPM`:''} · ${progress?.learning_status||'not started'}${item.needs_check?' · details need checking':''}`));row.append(text,button('View song',()=>{this.selected={song:item};this.render();}));}
       target.append(row);
     }
     if(list.length>12){pages.append(button('Previous',()=>{this.page--;this.render();}),node('span',`${this.page+1} / ${Math.ceil(list.length/12)}`),button('Next',()=>{this.page++;this.render();}));pages.firstChild.disabled=this.page===0;pages.lastChild.disabled=start+12>=list.length;}
@@ -76,6 +86,15 @@ export class ProjectLibrary {
     song=song||this.songs.find(s=>s.catalogueId===project.songId)||{catalogueId:project.id,title:project.title,artist:project.artist,practice:{}};
     const id=song.catalogueId,practice={...song.practice,...this.states[id]?.practice};
     target.append(button('← Back to results',()=>{this.selected=null;this.render();}),node('h3',song.title),node('p',song.artist));
+    if(!project){
+      const index=this.filteredSongs?.findIndex(s=>s.catalogueId===id)??-1;
+      if(index>=0){
+        const nav=node('nav',undefined,'song-detail-navigation');nav.setAttribute('aria-label','Browse filtered songs');
+        const go=offset=>{const next=index+offset;this.page=Math.floor(next/12);this.selected={song:this.filteredSongs[next]};this.render();target.scrollTop=0;};
+        const previous=button('Previous song',()=>go(-1)),next=button('Next song',()=>go(1));previous.disabled=index===0;next.disabled=index===this.filteredSongs.length-1;
+        nav.append(previous,node('span',`Song ${index+1} of ${this.filteredSongs.length}`),next);target.append(nav);
+      }
+    }
     if(song.needs_check)target.append(node('p','Some catalogue details need checking.','library-notice'));
     if(song.archived)target.append(node('p','This entry was removed from the updated catalogue. Your saved score and practice notes are still available here.','library-notice'));
     const facts=[song.genre&&`Genre: ${song.genre}`,song.album&&`Album: ${song.album}${song.year?` (${song.year})`:''}`,song.original_artist&&`Originally by: ${song.original_artist}`,song.source&&`From: ${song.source}`,song.key&&`Key: ${song.key}`,song.bpm&&`Original tempo: ${song.bpm} BPM`,song.tuning&&`Tuning: ${song.tuning}`,song.capo!==null&&song.capo!==undefined&&`Capo: ${song.capo}`,song.techniques?.length&&`Techniques: ${song.techniques.join(', ')}`,song.chords?.length&&`Chords: ${song.chords.join(', ')}`].filter(Boolean);

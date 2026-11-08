@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { catalogueEntries, filterSongs, safeResourceUrl, captureSession } from '../practice/song-catalog.js';
+import { catalogueEntries, filterSongs, sortSongs, songKey, songTuning, songFilterOptions, UNKNOWN_METADATA, safeResourceUrl, captureSession } from '../practice/song-catalog.js';
 import { importLibrary } from '../practice/library-backup.js';
 import { mergeCatalogues } from '../practice/merge-catalogue.js';
 import { songCatalogue } from '../practice/score-library-plugin.js';
@@ -53,6 +53,29 @@ test('checkpoints capture practice state without autoplay, microphone permission
   const state={playing:true,selectedTrack:1,speed:50,snap:'beat',range:{startTick:960,endTick:3840},looping:true,volume:35,countIn:false,metronome:true,position:{currentTick:1920},tracks:[{index:1,name:'Guitar',muted:false,solo:true}]};
   const session=captureSession(state,{view:'scrolling',mode:'wait'});
   assert.equal(session.tick,1920);assert.equal(session.mode,'wait');assert(!('playing'in session));assert(!('midi'in session));assert.notEqual(session.range,state.range);
+});
+
+test('song filters combine key, genre, progress, technique, chord, instrument, tuning and saved scores',()=>{
+  const songs=catalogueEntries({songs:[
+    {id:1,title:'First',artist:'Band',genre:'Rock',key:'C#m',instrument:'electric',tuning:'Standard (EADGBe)',techniques:['riff'],chords:['E'],source:'Game',practice:{learning_status:'not started'},bpm:100},
+    {id:2,title:'Second',artist:'Another',genre:'Rock',key:'Db minor',instrument:'acoustic',tuning:'E A D G B E',techniques:['fingerpicking'],chords:['E'],bpm:80},
+    {id:3,title:'Third',artist:'Band',genre:'Folk',chords:['Am'],bpm:null},
+  ]});
+  assert.equal(songKey('C#m').value,songKey('D♭ minor').value);
+  assert.equal(songKey('F# major (tuned down a half step; G shapes)').value,'6:major');
+  assert.equal(songKey('A').value,'9:major');assert.equal(songKey(null).value,UNKNOWN_METADATA);
+  assert.equal(songTuning('E A D G B E').value,songTuning('Standard').value);
+  assert.equal(songTuning('Drop B (per tutorial title)').value,'drop b');
+  const filters={genre:'Rock',key:songKey('C# minor').value,tuning:'standard'};
+  assert.equal(filterSongs(songs,filters).length,2);
+  assert.deepEqual(filterSongs(songs,{...filters,instrument:'electric',technique:'riff',chord:'E',hasScore:true,scoreIds:new Set(['songs:1'])}).map(s=>s.id),[1]);
+  assert.equal(filterSongs(songs,{...filters,chord:'Am'}).length,0);
+  assert.equal(filterSongs(songs,{hasScore:true}).length,0);
+  assert.equal(filterSongs(songs,{key:UNKNOWN_METADATA})[0].id,3); // Chord names do not fill in a missing key.
+  assert.equal(filterSongs(songs,{query:'game electric'})[0].id,1);
+  assert.equal(songFilterOptions(songs,'key').length,2);
+  assert.deepEqual(sortSongs(songs,'bpm').map(s=>s.id),[2,1,3]);
+  assert.equal(sortSongs(songs,'artist')[0].id,2);assert.equal(songs[0].id,1);
 });
 test('malformed backups are rejected before writing any records',async()=>{
   let writes=0;const store={remember:()=>{++writes;},putEntry:()=>{++writes;}};

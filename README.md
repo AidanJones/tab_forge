@@ -63,7 +63,16 @@ Suggestions separate. Updated metadata wins; promoted suggestions retain their
 old internal identity, so attached scores and practice notes stay linked.
 Removed entries remain available from existing saved projects. Both source
 files are preserved. Search by title,
-artist, chord or technique, filter by genre/progress, and open a song to find its
+artist, chord, technique or source, then combine **Genre**, **Key** and **Progress**
+filters. **More filters** adds instrument, tuning, technique, a required chord and
+**Has a saved score**. Key spellings such as C#m / D-flat minor are grouped;
+missing keys and tunings stay **Unknown / not listed**, never inferred from chords.
+Only metadata present in the catalogue is offered. Sort by title, artist or tempo
+(unknown tempos last), or keep the catalogue order. **Clear filters** resets the
+search, sorting and all filters. In song details, **Previous song / Next song**
+follow the current filtered, sorted results; **Back to results** preserves the
+filters and page. Recent projects keeps its date order and filename/title search.
+Open a song to find its
 tab/tutorial/video links. Add a suggestion to My songs without changing the
 source JSON. Catalogue metadata and links are supplied data, not newly verified
 by the app; existing `needs_check` flags remain visible.
