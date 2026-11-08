@@ -7,6 +7,7 @@ import { PlayAlong } from './play-along.js';
 import { Tuner } from './tuner.js';
 import { Trainers } from './trainers.js';
 import { mountWorkflow } from './workflow.js';
+import { RiffLibrary } from './riffs.js';
 import { ProjectLibrary } from './project-library.js';
 
 export function mountPractice(root = document, { embedded = false } = {}) {
@@ -298,6 +299,8 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     if(state.ready && pendingFollowExercise?.title===state.title){
       const intent=pendingFollowExercise;
       pendingFollowExercise=null;
+      if(intent.session){player.restoreSession(intent.session);state=player.snapshot;}
+      if(intent.from==='riffs')document.dispatchEvent(new CustomEvent('tab-forge:riff-loaded'));
       document.dispatchEvent(new CustomEvent('tab-forge:practice-open',{detail:intent}));
       $('play-along-mode').value=intent.wait?'wait':'timed';
       root.querySelector(`[data-player-view="${intent.wait?'scrolling':'score'}"]`).click();
@@ -398,7 +401,7 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     if(projects.active){if(await projects.flush(latest))projects.message('Practice checkpoint saved in this browser.');return;}
     const request=sourceRequest;
     const file=new File([player.exportFile('gp')],scoreFilename(latest.title,'gp'),{type:'application/octet-stream'});
-    await projects.remember(file,latest,null,embedded?document.querySelector('#input').value:null,()=>request===sourceRequest,false);
+    await projects.remember(file,latest,null,embedded&&latest.source!=='Riff trainer'?document.querySelector('#input').value:null,()=>request===sourceRequest,false);
     if(request===sourceRequest){projects.update(latest);await projects.flush();}
   }));
   $('print-score').addEventListener('click', () => run(() => player.printScore()));
@@ -510,6 +513,25 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     trainers.resetChord();document.querySelector('.trainer-listen').checked=true;
     if(tuner.latest?.state!=='listening')tuner.mic.start(tuner.$('.tuner-input').value);
   }});
+  new RiffLibrary(workflow.riffHost,{
+    load:(exercise,{wait=false}={})=>{
+      const request=++sourceRequest;
+      run(async()=>{
+        const instance=await ensurePlayer();if(request!==sourceRequest)return;
+        projects?.begin();
+        pendingFollowExercise={title:exercise.title,wait,from:'riffs',session:exercise.session};
+        watchLoading();
+        try{instance.loadTex(exercise.tex,'Riff trainer',{title:exercise.title});}
+        catch(error){pendingFollowExercise=null;throw error;}
+      });
+    },
+    capture:()=>{
+      if(!latest?.ready||!latest.range)throw new Error('Load a song, select a short passage under Passage & tracks, then return here to save it.');
+      const bars=latest.bars.filter(b=>b.end>latest.range.startTick&&b.start<latest.range.endTick);
+      if(bars.length>8)throw new Error('Choose a shorter passage: riffs can be up to eight bars.');
+      return {tex:player.exportFile('alphatex'),session:{range:latest.range,selectedTrack:latest.selectedTrack}};
+    },
+  });
   projects=new ProjectLibrary({host:workflow.libraryHost,status:$('project-save-status'),getView:()=>({view:$('play-along').hidden?'score':'scrolling',mode:$('play-along-mode').value}),
     onOpeningChanged:()=>{if(latest)render(latest);},
     onFile:openFile,

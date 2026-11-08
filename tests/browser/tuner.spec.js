@@ -215,3 +215,38 @@ test('closing the optional scale quick check releases microphone capture',async(
   await expect.poll(()=>page.evaluate(()=>window.micStops)).toBe(1);
   await expect(page.locator('#guitar-tuner')).toHaveAttribute('data-state','idle');
 });
+
+
+test('riff practice waits on wrong pitches and advances on the correct note',async({page})=>{
+  await fakeMicrophone(page);await page.goto('/practice.html#riffs');
+  await page.locator('.riff-card').nth(1).getByRole('button',{name:'Practise riff with microphone',exact:true}).click();
+  await expect(page.getByLabel('Play-along mode')).toHaveValue('wait');
+  await page.locator('#follow-microphone').click();await expect(page.locator('#play')).toBeEnabled();
+  await page.evaluate(f=>window.testPitch(f),frequency(40));await expect(page.locator('.tuner-note')).toHaveText('E2');
+  await page.getByLabel('Play-along start delay').selectOption('0');await page.locator('#play').click();
+  await expect(page.locator('.play-along-status')).toContainText('0 / 8 played');
+  const tick=await page.locator('#position').evaluate(n=>n.value);
+  await page.evaluate(f=>window.testPitch(f),frequency(40));await expect(page.locator('.play-along-status')).toContainText('Heard E2');
+  expect(await page.locator('#position').evaluate(n=>n.value)).toBe(tick);
+  const notes=[45,48,50,52,55,52,50,48];
+  for(const [i,note]of notes.entries()){
+    await page.evaluate(f=>window.testPitch(f),frequency(note));
+    if(i<notes.length-1)await expect(page.locator('.play-along-status')).toContainText(`${i+1} / 8 played`);
+  }
+  await expect(page.locator('.play-along-status')).toContainText('Complete');
+  await page.getByRole('link',{name:'← Back to riffs',exact:true}).click();
+  await expect.poll(()=>page.evaluate(()=>window.micStops)).toBe(1);
+});
+
+
+test('fretboard note quiz accepts the correct microphone pitch and releases capture on navigation',async({page})=>{
+  await fakeMicrophone(page);await page.goto('/notes.html');
+  await page.getByLabel('Strings to learn').selectOption('6');await page.getByLabel('Fret range').selectOption('5');await page.getByLabel('Learning mode').selectOption('find');
+  const question=await page.locator('#note-question').textContent(),name=question.match(/^Find (\w+) on/)[1];
+  const midi={E:40,F:41,G:43,A:45}[name];
+  await openSection(page,'#note-microphone');await page.locator('#note-mic-start').click();
+  await page.evaluate(f=>window.testPitch(f),frequency(65));await expect(page.locator('#note-mic-status')).toContainText('Heard F4');
+  await expect(page.locator('#note-question')).toHaveText(question);await expect(page.locator('#note-feedback')).not.toContainText('Correct');
+  await page.evaluate(f=>window.testPitch(f),frequency(midi));await expect(page.locator('#note-feedback')).toContainText('Correct');
+  await page.getByRole('link',{name:'Riffs',exact:true}).click();await expect(page.locator('#riff-library')).toBeVisible();
+});

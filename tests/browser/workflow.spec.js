@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test('songs put the score first, keep advanced controls optional, and preserve the session across tools',async({page})=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/practice.html');
   const nav=page.getByRole('navigation',{name:'Main tasks'});
-  await expect(nav.getByRole('link')).toHaveCount(5);
+  await expect(nav.getByRole('link')).toHaveCount(7);
   await expect(page.locator('#score-viewport')).toBeVisible();
   expect(await page.locator('#score-viewport').evaluate(n=>n.getBoundingClientRect().top)).toBeLessThan(850);
   await page.locator('#demo').click();await expect(page.locator('#play')).toBeEnabled();

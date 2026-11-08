@@ -22,6 +22,7 @@ document.addEventListener('tab-forge:exercise', event => {
 const notice = document.getElementById('editor-playback-status');
 const tempo = document.getElementById('editor-tempo');
 const duration = document.getElementById('editor-duration');
+document.addEventListener('tab-forge:riff-loaded',()=>{root.inert=false;root.classList.remove('out-of-date');notice.textContent='Practising a riff. Your lesson notes are kept; update the preview to play them again.';});
 let revision = 0;
 root.inert = true;
 

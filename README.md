@@ -11,6 +11,40 @@ available for existing lesson files.
 
 ## Browser practice
 
+### Riffs and fretboard notes
+
+**Riffs** is a searchable collection of short phrases. Six original technique
+exercises are included; use **Add your own riff** for a song/artist label,
+technique, practice notes and a timestamped YouTube example. Enter 1–8 bars of
+four quarter notes using fret.string syntax (`0.6 3.6 5.6 3.6`), or load a song,
+select up to eight bars under Passage & tracks, then save that passage from the
+riff form. Saved passages retain the score's rhythm, tuning and selected track;
+the backing score is kept with the selected playback range, rather than destructively
+trimming it. **Practise riff with microphone** opens the scrolling wait-for-notes
+player. Enable the microphone, choose a countdown, then Start listening. Wrong
+notes hold the target; correct pitches advance it. Polyphonic riffs use timed
+playback instead. Returning to Riffs preserves your search; editor lesson text is
+kept when practising a riff. Personal riffs use local browser storage, with their
+own export/import backup under Riff backups. YouTube links are references;
+video/audio transcription is not implemented.
+
+**Learn notes** opens a separate [fretboard learning page](notes.html). Explore
+natural notes or all pitches, highlight matching names, and practise Find a note
+or Name a note quizzes. Choose low E + A (6 + 5), high e + B (1 + 2), individual
+strings or all six, over frets 0–5 or 0–12. Quizzes are untimed and keep the answer
+hidden until correct or revealed. Find a note can use the same local microphone
+pitch detector; pitch cannot prove which string/fingering was used. Choose Next
+note after reviewing the answer. Results/settings persist in this browser.
+The page explains natural-note gaps, E-string landmarks, tuning, and the
+FCGDAEB / BEADGCF key-signature mnemonics, with links to the teaching references.
+
+On **Scales**, the **Scale map** tab shows every scale tone across all six strings
+in frets 0–12 or 0–24. Gold marks the tonic, green marks other scale tones, and a
+white outline identifies notes in the current generated practice pattern. Switch
+between note names and degrees. **Circle of fifths** displays major/relative-minor
+pairs and their key signatures; selecting a key updates the scale controls.
+These visualisations are also available in the editor's Scales destination.
+
 ### Persistent songs and projects
 
 **Songs → Your songs & saved projects** uses [`songs/songs.json`](songs/songs.json)
@@ -46,7 +80,7 @@ Individual saved files can also be downloaded from Details. Removing a saved
 copy does not delete the original file or catalogue progress. If storage is
 unavailable/full, ordinary playback remains usable and the save failure is shown.
 
-Both pages use the same **Write / Songs / Tune / Chords / Scales** task navigation.
+Both pages use the same **Write / Songs / Tune / Chords / Scales / Riffs / Learn notes** task navigation.
 Tools do not require a loaded song. Back/Forward retains same-page selections and
 song position; switching tasks pauses playback. Write offers **Practise this tab**
 and **Back to writing**, automatic browser drafts and **Restore previous lesson**

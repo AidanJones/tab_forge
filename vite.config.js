@@ -10,6 +10,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         editor: fileURLToPath(new URL('./index.html', import.meta.url)),
+        notes: fileURLToPath(new URL('./notes.html', import.meta.url)),
         practice: fileURLToPath(new URL('./practice.html', import.meta.url)),
       },
     },

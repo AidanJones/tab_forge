@@ -271,9 +271,10 @@ export class PracticePlayer {
     if (this.api.score) this.api.print(undefined, this.scoreDisplay.shapeHints && this.scoreDisplay.fingerExamples ? {display:{stretchForce:Math.max(2,this.standardStretchForce)}} : undefined);
   }
 
-  loadTex(text, source = 'alphaTex score') {
+  loadTex(text, source = 'alphaTex score', {title} = {}) {
     ++this.request; // Supersede a pending file read.
     const score = alphaTab.importer.ScoreLoader.loadAlphaTex(text, this.api.settings);
+    if(title)score.title=title;
     this.loading = false;
     this.loadScore(score, source);
   }

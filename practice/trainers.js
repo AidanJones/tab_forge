@@ -1,3 +1,4 @@
+import { ScaleMap } from './scale-map.js';
 import { CHORD_LIBRARY } from './chord-library.js';
 import { chordExercise, scaleExercise, SCALES, ROOTS, NoteTrainer } from './exercises.js';
 import { midiFrequency, pitchNote } from './pitch.js';
@@ -16,6 +17,7 @@ export class Trainers {
     this.$('.trainer-load').addEventListener('click',()=>this.loadExercise(this.exercise));
     this.$('.trainer-practise').addEventListener('click',()=>this.loadExercise(this.exercise,{wait:true}));
     this.$('.trainer-mode').addEventListener('change',()=>this.update());
+    this.scaleMap=new ScaleMap(this.$('.trainer-scale-panel'),(root,type)=>{this.$('.trainer-root').value=String(root);if(type)this.$('.trainer-scale').value=type;this.resetScale();});
     this.resetChord();this.resetScale();
   }
   resetChord() {
@@ -31,7 +33,7 @@ export class Trainers {
   }
   resetScale() {
     this.exercise=scaleExercise(Number(this.$('.trainer-root').value),this.$('.trainer-scale').value,this.$('.trainer-direction').value);
-    this.scale.reset(this.exercise.notes);this.update();
+    this.scale.reset(this.exercise.notes);this.scaleMap.update(Number(this.$('.trainer-root').value),this.$('.trainer-scale').value,this.exercise);this.update();
   }
   update(state) {
     const mode=this.$('.trainer-mode').value;

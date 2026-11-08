@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Learn notes · tab_forge</title><link rel="stylesheet" href="./practice/practice.css"><link rel="stylesheet" href="./practice/notes.css"></head>
+<body data-task="notes">
+<header class="page-header"><a class="brand" href="./index.html">tab_forge <span>/ Learn notes</span></a>
+  <nav class="task-navigation" aria-label="Main tasks"><a href="./index.html#write">Write</a><a href="./practice.html#songs">Songs</a><a href="./practice.html#tuner">Tune</a><a href="./practice.html#chords">Chords</a><a href="./practice.html#scales">Scales</a><a href="./practice.html#riffs">Riffs</a><a href="./notes.html" aria-current="page">Learn notes</a></nav></header>
+<main>
+  <section class="intro"><div><p class="eyebrow">Know the neck</p><h1>Learn your fretboard notes</h1><p>Start with natural notes on low E and A. Learn a few landmarks, then test yourself without rushing.</p></div></section>
+  <section class="note-panel" aria-labelledby="map-title">
+    <div class="panel-heading"><div><h2 id="map-title">Explore the fretboard</h2><p>Standard tuning · no capo · high e at the top, low E at the bottom. Open strings are fret 0.</p></div></div>
+    <div class="note-settings">
+      <label>Strings to learn<select id="note-strings"><option value="bass">Low E + A (6 + 5) · start here</option><option value="treble">High e + B (1 + 2)</option><option value="all">All six strings</option><option value="6">Low E · string 6</option><option value="5">A · string 5</option><option value="4">D · string 4</option><option value="3">G · string 3</option><option value="2">B · string 2</option><option value="1">High e · string 1</option></select></label>
+      <label>Fret range<select id="note-range"><option value="5">0–5 · first position</option><option value="12" selected>0–12 · one octave</option></select></label>
+      <label>Notes to show<select id="note-set"><option value="natural">Natural notes · A B C D E F G</option><option value="all">All notes · with sharps / flats</option></select></label>
+      <label>Learning mode<select id="note-mode"><option value="explore">Explore · show the names</option><option value="find">Find a note · click its fret or play it</option><option value="name">Name a note · identify the marked fret</option></select></label>
+    </div>
+    <p class="note-tip">“First two strings” can mean high e + B (strings 1 + 2). Low E + A (strings 6 + 5) are useful for finding chord roots. Both are available above.</p>
+    <div id="note-challenge" hidden><h3 id="note-question"></h3><p id="note-score"></p><div id="note-answer-buttons" class="button-row"></div><div class="button-row"><button id="note-reveal">Show answer</button><button id="note-next">Skip / next note</button></div></div>
+    <p id="note-feedback" role="status" aria-live="polite">Click a labelled note to highlight its other positions.</p>
+    <div class="note-board-scroll" tabindex="0" aria-label="Scrollable fretboard"><div id="note-board" role="group" aria-label="Guitar note positions"></div></div>
+    <p id="note-landmarks">Low E: E(0), F(1), G(3), A(5), B(7), C(8), D(10), E(12). A: A(0), B(2), C(3), D(5), E(7), F(8), G(10), A(12).</p>
+    <details id="note-microphone"><summary>Play answers on your guitar · optional microphone</summary><p>Use Find a note mode, then play the requested pitch. The microphone can hear pitch, but cannot tell which string or fingering you used. Match the pictured string yourself. No microphone is needed for the click quizzes.</p>
+      <div class="button-row"><button id="note-mic-start">Start microphone</button><button id="note-mic-stop" disabled>Stop microphone</button><button id="note-mic-resume" hidden>Resume audio</button></div>
+      <label>Microphone input<select id="note-input"><option value="">System default</option></select></label>
+      <label>Noise floor (dB)<input id="note-noise" type="range" min="-80" max="-30" value="-65"></label>
+      <label>Input level<meter id="note-level" min="-90" max="0" value="-90"></meter></label><p id="note-mic-status" role="status">Microphone off.</p>
+    </details>
+    <details><summary>Your practice progress</summary><p id="note-total"></p><p>Your results and learning settings stay in this browser.</p><button id="note-reset">Reset note quiz progress</button></details>
+  </section>
+  <section class="note-panel" aria-labelledby="note-patterns"><h2 id="note-patterns">The patterns behind the names</h2>
+    <p>Natural notes are A, B, C, D, E, F and G. Each fret is one semitone. There is <strong>one fret between B–C and E–F</strong>; the other neighbouring natural notes are two frets apart.</p>
+    <div class="note-steps" aria-label="Natural note spacing from C to C"><span>C</span><small>2 frets</small><span>D</span><small>2</small><span>E</span><small>1</small><span>F</span><small>2</small><span>G</span><small>2</small><span>A</span><small>2</small><span>B</span><small>1</small><span>C</span></div>
+    <p>The 12th fret repeats the open-string name one octave higher. Both E strings have the same note names at the same frets, two octaves apart.</p>
+    <h3>A small first practice</h3><ol><li>Explore low E. Say each natural note aloud as you play it.</li><li>Remember G–A–B at frets 3–5–7, then C–D–E at 8–10–12. F is at fret 1.</li><li>Switch to Find a note, using frets 0–5 first. Add the A string, then extend to fret 12.</li><li>Try Name a note, then move on to the other strings.</li></ol>
+    <details open><summary>What do the mnemonics mean?</summary>
+      <dl class="note-mnemonics"><dt>Father Christmas Gave Dad An Electric Bass</dt><dd><strong>F C G D A E B</strong>: the order that sharps are added in key signatures. “Blanket” is a common version of the final word. One sharp is F♯; two are F♯ and C♯. This also follows fourths when read backwards.</dd>
+      <dt>BEAD GCF</dt><dd><strong>B E A D G C F</strong>: the order that flats are added. One flat is B♭; two are B♭ and E♭. Read as natural notes, this sequence moves up in perfect fourths, which helps with string-to-string patterns. It is not the guitar’s open-string order: the G–B strings are a major third apart.</dd>
+      <dt>G–A–B</dt><dd>Three natural notes you can use as landmarks: on either E string they sit at frets <strong>3, 5 and 7</strong>. The phrase alone is not a universal mnemonic; its meaning depends on the lesson where you heard it.</dd>
+      <dt>Open strings, thickest to thinnest</dt><dd><strong>E A D G B E</strong>. For example, “Eddie Ate Dynamite, Good Bye Eddie.” Guitar string numbers run the other way: high e is string 1, low E is string 6.</dd></dl>
+    </details>
+    <p class="note-sources">References: <a href="https://www.fachords.com/fretboard-trainer-software/" target="_blank" rel="noopener noreferrer">FaChords trainer and its string/fret practice approach</a> · <a href="https://dfp.informance.biz/content/pages/177-theres-more-to-playing-the-piano/1010-chapter-8-key-signatures" target="_blank" rel="noopener noreferrer">Key-signature mnemonic explanations</a>.</p>
+  </section>
+  <p class="note-next-step">Put the names to work: <a href="./practice.html#scales">Practise a scale →</a> · <a href="./practice.html#riffs">Learn a short riff →</a> · <a href="./practice.html#songs">Back to your songs →</a></p>
+</main><script type="module" src="./practice/notes.js"></script></body></html>

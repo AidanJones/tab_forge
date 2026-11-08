@@ -108,3 +108,15 @@ Saved projects now provide browser persistence; backups provide portability.
 Validation covers task entry, direct links, Back/Forward, draft recovery, restore
 after scale replacement, paused song retention, hidden-player shortcut guards,
 mobile overflow and existing playback/import/export/hand-guide flows.
+
+
+Update, 8 November 2026: Riffs now offers short searchable exercises, user-entered
+phrases and saved song passages with example-video links. Practice opens the
+existing wait-for-notes player and has an explicit Back to riffs link. Learn
+notes is a separate destination, with an exploratory natural-note map, constrained
+string/fret quizzes, optional microphone checking and beginner theory. These
+keep library browsing, note naming and focused playback out of one crowded view.
+
+Scales also has Scale map / Circle of fifths tabs. These visual explanations stay
+with the scale choices; roots, other scale tones and the generated practice
+position have separate, labelled visual treatments.
