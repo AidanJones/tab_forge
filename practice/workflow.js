@@ -12,6 +12,12 @@ export function mountWorkflow(root, { embedded, pause, stopMicrophone, checkChor
   const source=$('.library');
   let songPicker,songPickerTitle;
   if(source){songPicker=doc.createElement('details');songPicker.className='song-picker';songPicker.id='song-picker';songPicker.open=true;songPickerTitle=doc.createElement('summary');songPickerTitle.textContent='Choose from your score library';source.before(songPicker);songPicker.append(songPickerTitle,source);}
+  let libraryHost;
+  if(songPicker){
+    libraryHost=doc.createElement('section');libraryHost.id='project-library';libraryHost.setAttribute('aria-label','Persistent song library');songPicker.insertBefore(libraryHost,source);
+    const folder=doc.createElement('details');folder.id='folder-library';folder.className='folder-library';const heading=doc.createElement('summary');heading.textContent='Files in your score folder';source.before(folder);folder.append(heading,source);
+    songPickerTitle.textContent='Your songs & saved projects';
+  }
 
   const nav=doc.createElement('nav');nav.className='task-navigation';nav.setAttribute('aria-label','Main tasks');
   const tasks=[['write','Write',embedded?'#write':'./index.html#write'],['songs','Songs',embedded?'./practice.html#songs':'#songs'],['tuner','Tune','#tuner'],['chords','Chords','#chords'],['scales','Scales','#scales']];
@@ -123,6 +129,7 @@ export function mountWorkflow(root, { embedded, pause, stopMicrophone, checkChor
   }
   window.addEventListener('hashchange',()=>apply({focus:true}));
   doc.addEventListener('tab-forge:practice-open',event=>{
+    if(songPicker)songPicker.open=false;
     returnLink.href='#scales';returnLink.textContent='← Back to scales';back.hidden=event.detail.from!=='scales';
     // Apply immediately so the caller can focus the now-visible player. The
     // following hashchange sees the same task and does not stop the microphone.
@@ -133,12 +140,13 @@ export function mountWorkflow(root, { embedded, pause, stopMicrophone, checkChor
   window.addEventListener('popstate',()=>apply({focus:true}));
   apply();
   let hadScore=false,wasReady=false;
-  return { update(state) {
+  songPicker?.addEventListener('toggle',()=>{if(songPicker.open&&hadScore)pause();});
+  return { libraryHost, update(state) {
     workspace.classList.toggle('has-score',state.tracks.length>0);
     if(embedded)guide.textContent=state.ready?'Your tab is ready. Practise this tab for a focused player; Back to writing returns to your notes.':'Update the preview to hear your tab. Your draft is kept in this browser.';
     if(!embedded)guide.hidden=tools.hidden?state.tracks.length>0:true;
     if(!embedded){
-      if(state.tracks.length && !hadScore){songPicker.open=false;songPickerTitle.textContent='Change song · score library';}
+      if(state.tracks.length && !hadScore){songPicker.open=false;songPickerTitle.textContent='Change song · saved projects & library';}
       if(state.ready && !wasReady && task==='songs')workspace.scrollIntoView({block:'start'});
     }
     hadScore=state.tracks.length>0;wasReady=state.ready;

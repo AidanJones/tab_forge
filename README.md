@@ -11,6 +11,41 @@ available for existing lesson files.
 
 ## Browser practice
 
+### Persistent songs and projects
+
+**Songs → Your songs & saved projects** uses [`songs/songs.json`](songs/songs.json)
+as its catalogue, keeping My songs and Suggestions separate. Search by title,
+artist, chord or technique, filter by genre/progress, and open a song to find its
+tab/tutorial/video links. Add a suggestion to My songs without changing the
+source JSON. Catalogue metadata and links are supplied data, not newly verified
+by the app; existing `needs_check` flags remain visible.
+
+Choose **Attach downloaded score** on a song to associate a Guitar Pro,
+MusicXML or alphaTex file. External tab-page links cannot be played directly.
+Successfully opened files are saved automatically under **Recent projects**;
+different arrangements are separate projects, while reattaching identical bytes
+to the same song reuses its saved copy. Generated scales and editor lessons can
+be kept using **Save / export → Save project in browser**. Creator projects also
+retain the original lesson notes for reopening in the editor.
+
+**Resume** restores the saved score, position, speed, displayed track, mute/solo
+mix, passage/loop, volume, count-in/metronome and Score/Play-along mode. It stays
+paused and never reconnects MIDI or enables a microphone automatically. File
+imports start normally; a background save never rewinds a playing score. Use
+Save project again for an immediate checkpoint. Practice notes, a goal, target
+BPM and learning status can be edited in the song/project details. Practising
+records a date and moves “not started” to “learning”.
+
+Files and progress are stored locally in IndexedDB, separately from the source
+catalogue. Use the same browser/profile and address: `127.0.0.1` and `localhost`
+have separate stores. **Backup & refresh → Export library backup** downloads the
+saved score bytes, practice notes and checkpoints; **Import library backup**
+merges them into another browser. Newer local practice entries are retained.
+Backups support up to 60 MB of score data (100 MB maximum imported JSON).
+Individual saved files can also be downloaded from Details. Removing a saved
+copy does not delete the original file or catalogue progress. If storage is
+unavailable/full, ordinary playback remains usable and the save failure is shown.
+
 Both pages use the same **Write / Songs / Tune / Chords / Scales** task navigation.
 Tools do not require a loaded song. Back/Forward retains same-page selections and
 song position; switching tasks pauses playback. Write offers **Practise this tab**
@@ -103,7 +138,8 @@ Open the local URL printed by Vite and choose **Songs**, or visit
 With npm, use `npm install` and `npm run dev` instead.
 
 1. Put your downloaded `.gp4` files directly in **`public/scores/`**.
-2. Open Practice and click **Refresh library**.
+2. In Songs, open **Your songs & saved projects → Files in your score folder**
+   and click **Refresh library**.
 3. Choose a file and click **Load selected**, then **Play**.
 
 The folder is scanned each time you refresh the library. Score files are ignored

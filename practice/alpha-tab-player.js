@@ -124,6 +124,7 @@ export class PracticePlayer {
       metronome: this.api.metronomeVolume > 0,
       volume: this.volume,
       selectedTrack: this.selectedTrack,
+      snap: this.snap,
       fingering: this.fingeringView,
       timeline: this.playAlongView,
       tracks: (score?.tracks ?? []).map(track => ({
@@ -344,6 +345,25 @@ export class PracticePlayer {
 
   stop() { this.cancelCountdown(); this.noteFollowing.reset(); this.onSilence(); this.activeBeats = []; this.api.stop(); this.emit(); }
   pause() { this.cancelCountdown();this.noteFollowing.pause();this.onSilence();if(this.snapshot.playing)this.api.pause();this.emit(); }
+  restoreSession(session) {
+    session=session&&typeof session==='object'?session:{};
+    this.stop();
+    const track=Number(session.track);
+    if(Number.isInteger(track)&&this.api.score?.tracks[track])this.selectTrack(track);
+    this.setSpeed(session.speed??100);
+    this.snap=session.snap==='beat'?'beat':'bar';
+    for(const track of Array.isArray(session.tracks)?session.tracks:[])if(track&&Number.isInteger(track.index)&&this.api.score?.tracks[track.index]){
+      this.setTrackState(track.index,'mute',Boolean(track.muted));this.setTrackState(track.index,'solo',Boolean(track.solo));
+    }
+    if(Number.isFinite(session.volume))this.setVolume(session.volume);
+    const range=session.range;
+    this.api.playbackRange=range&&Number.isFinite(range.startTick)&&Number.isFinite(range.endTick)&&range.startTick>=0&&range.startTick<range.endTick&&range.endTick<=this.api.endTick?{...range}:null;
+    this.api.isLooping=Boolean(session.looping);
+    this.setCountIn(Boolean(session.countIn));this.setMetronome(Boolean(session.metronome));
+    const tick=Number(session.tick);
+    this.api.tickPosition=Number.isFinite(tick)?Math.max(this.api.playbackRange?.startTick||0,Math.min(tick,this.api.playbackRange?.endTick||this.api.endTick)):0;
+    this.emit();
+  }
   hearNote(state) {
     if(!this.noteFollowing.active)return;
     if(state.state!=='listening'){this.noteFollowing.pause();this.emit();return;}

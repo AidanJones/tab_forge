@@ -143,6 +143,7 @@ test('adding a GP4 file to the folder makes it loadable after Refresh library', 
   const destination = new URL(`../../public/scores/${name.replace('#', '%23')}`, import.meta.url);
   try {
     await copyFile(new URL('../fixtures/original-four-notes.gp4', import.meta.url), destination);
+    await openSection(page, '#folder-library');
     await page.locator('#refresh-library').click();
     await expect(page.locator('#library-score option', { hasText: name })).toHaveCount(1);
     await page.locator('#library-score').selectOption({ label: name });

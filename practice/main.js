@@ -7,11 +7,13 @@ import { PlayAlong } from './play-along.js';
 import { Tuner } from './tuner.js';
 import { Trainers } from './trainers.js';
 import { mountWorkflow } from './workflow.js';
+import { ProjectLibrary } from './project-library.js';
 
 export function mountPractice(root = document, { embedded = false } = {}) {
   const $ = id => root.querySelector(`#${id}`);
   let trainers;
   let workflow;
+  let projects;
   let player;
   let latest;
   let microphoneState;
@@ -36,6 +38,7 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     run(async()=>{
       const instance=await ensurePlayer();
       if(request!==sourceRequest)return;
+      projects?.begin();
       watchLoading();instance.loadTex(exercise.tex,'Scale trainer');
     });
   });
@@ -213,6 +216,7 @@ export function mountPractice(root = document, { embedded = false } = {}) {
   function render(state) {
     latest = state;
     workflow?.update(state);
+    projects?.update(state);
     midi.setVolume(state.volume);
     fretboard.update(state.fingering);
     playAlong.update(state);
@@ -232,8 +236,8 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     $('error').textContent = error;
     $('error').hidden = !error;
 
-    for (const id of ['play', 'stop', 'speed', 'loop', 'count-in', 'metronome', 'volume', 'track', 'save-gp', 'save-alphatex', 'save-midi', 'print-score']) {
-      $(id).disabled = !state.ready;
+    for (const id of ['play', 'stop', 'speed', 'loop', 'count-in', 'metronome', 'volume', 'track', 'save-project', 'save-gp', 'save-alphatex', 'save-midi', 'print-score']) {
+      $(id).disabled = !state.ready || Boolean(projects?.opening || projects?.pending);
     }
     for (const id of ['from-bar', 'to-bar', 'select-bars', 'clear-range']) {
       $(id).disabled = !state.ready || !state.bars.length;
@@ -249,6 +253,7 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     $('count-in').checked = state.countIn;
     $('metronome').checked = state.metronome;
     $('volume').value = state.volume;
+    $('snap').value=state.snap;
     $('time').textContent = `${formatTime(state.position.currentTime)} / ${formatTime(state.position.endTime)}`;
     $('position').max = state.position.endTick || 1;
     $('position').value = state.position.currentTick;
@@ -318,15 +323,20 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     if (file) openFile(file);
   });
 
-  function openFile(file) {
+  function openFile(file, songId=null) {
     pendingFollowExercise=null;
     document.dispatchEvent(new CustomEvent('tab-forge:practice-open',{detail:{from:'songs',wait:false}}));
     const request = ++sourceRequest;
+    projects?.begin();
     return run(async () => {
       const instance = await ensurePlayer();
       if (request !== sourceRequest) return;
       watchLoading();
       await instance.loadFile(file);
+      if(request===sourceRequest && instance.api.score){
+        await projects.remember(file,instance.snapshot,songId,null,()=>request===sourceRequest,false);
+        if(request===sourceRequest)projects.update(instance.snapshot);
+      }
     });
   }
 
@@ -367,10 +377,8 @@ export function mountPractice(root = document, { embedded = false } = {}) {
       const response = await fetch(`${import.meta.env.BASE_URL}${score.url}`, { cache: 'no-store' });
       if (!response.ok) throw new Error('That score could not be opened. It may have moved; refresh the library and try again.');
       const file = new File([await response.arrayBuffer()], score.name);
-      const instance = await ensurePlayer();
       if (request !== sourceRequest) return;
-      watchLoading();
-      await instance.loadFile(file);
+      await openFile(file);
     } finally {
       $('load-library').disabled = !library.length;
     }
@@ -380,11 +388,19 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     const request = ++sourceRequest;
     const instance = await ensurePlayer();
     if (request !== sourceRequest) return;
+    projects?.begin();
     watchLoading();
     instance.loadTex(DEMO, 'Original demo · First steps');
   }));
 
   $('play').addEventListener('click', () => run(playPause));
+  $('save-project').addEventListener('click',()=>run(async()=>{
+    if(projects.active){if(await projects.flush(latest))projects.message('Practice checkpoint saved in this browser.');return;}
+    const request=sourceRequest;
+    const file=new File([player.exportFile('gp')],scoreFilename(latest.title,'gp'),{type:'application/octet-stream'});
+    await projects.remember(file,latest,null,embedded?document.querySelector('#input').value:null,()=>request===sourceRequest,false);
+    if(request===sourceRequest){projects.update(latest);await projects.flush();}
+  }));
   $('print-score').addEventListener('click', () => run(() => player.printScore()));
   for (const [id, format, type] of [['save-gp', 'gp', 'application/octet-stream'], ['save-alphatex', 'alphatex', 'text/plain;charset=utf-8'], ['save-midi', 'mid', 'audio/midi']]) {
     $(id).addEventListener('click', () => run(() => {
@@ -456,6 +472,7 @@ export function mountPractice(root = document, { embedded = false } = {}) {
 
   document.addEventListener('keydown', event => {
     if($('drop-zone').closest('[hidden]'))return;
+    if(document.querySelector('#song-picker')?.open && !$('drop-zone').contains(event.target))return;
     if (embedded && !root.contains(event.target)) return;
     if (event.defaultPrevented || event.repeat || event.ctrlKey || event.metaKey || event.altKey || isTypingTarget(event.target) || !latest?.ready) return;
     if (event.code === 'Space') { event.preventDefault(); run(playPause); }
@@ -467,9 +484,21 @@ export function mountPractice(root = document, { embedded = false } = {}) {
   });
 
   window.addEventListener('pagehide', event => {
+    projects?.flush(latest);if(projects)projects.suspended=true;
     midi.disarm();
     if (event.persisted) player?.stop();
     else { clearTimeout(loadingTimer); player?.dispose(); }
+  });
+  window.addEventListener('pageshow',async event=>{
+    if(!event.persisted||!projects)return;
+    const id=projects.active?.id,request=sourceRequest;
+    if(!id){projects.suspended=false;return;}
+    try{
+      const saved=await projects.store.get('projects',id);
+      if(request!==sourceRequest||projects.active?.id!==id)return;
+      if(saved){projects.activate(saved);if(saved.session)projects.onRestore(saved.session);projects.update(player.snapshot);}
+      else {projects.begin();projects.suspended=false;projects.message('The saved copy was removed. The current score can still be played.');}
+    }catch{projects.begin();projects.suspended=false;projects.message('Could not restore the checkpoint. Reopen the saved project with Resume.');}
   });
 
   if (location.protocol === 'file:') {
@@ -481,6 +510,26 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     trainers.resetChord();document.querySelector('.trainer-listen').checked=true;
     if(tuner.latest?.state!=='listening')tuner.mic.start(tuner.$('.tuner-input').value);
   }});
+  projects=new ProjectLibrary({host:workflow.libraryHost,status:$('project-save-status'),getView:()=>({view:$('play-along').hidden?'score':'scrolling',mode:$('play-along-mode').value}),
+    onOpeningChanged:()=>{if(latest)render(latest);},
+    onFile:openFile,
+    onOpen:async project=>{
+      const request=++sourceRequest;projects.begin();player?.pause();
+      const file=await projects.store.scoreFile(project),instance=await ensurePlayer();
+      if(request!==sourceRequest)return;
+      document.dispatchEvent(new CustomEvent('tab-forge:practice-open',{detail:{from:'library',wait:false}}));
+      watchLoading();await instance.loadFile(file);if(request!==sourceRequest)return;
+      const reopened=await projects.store.remember(file,{...project,title:project.title,session:project.session});
+      await projects.refresh();if(request!==sourceRequest)return;
+      projects.activate(reopened,{restore:true});projects.update(instance.snapshot);
+    },
+    onRestore:session=>{
+      player.restoreSession(session);
+      $('play-along-mode').value=session.mode==='wait'?'wait':'timed';
+      root.querySelector(`[data-player-view="${session.view==='scrolling'?'scrolling':'score'}"]`).click();
+      render(player.snapshot);
+    },
+  });
 
   return {
     loadTex(text, source) {
@@ -488,11 +537,13 @@ export function mountPractice(root = document, { embedded = false } = {}) {
       return run(async () => {
         const instance = await ensurePlayer();
         if (request !== sourceRequest) return;
+        projects?.begin();
         watchLoading();
         instance.loadTex(text, source);
       });
     },
     invalidate() {
+      projects?.begin();
       ++sourceRequest;
       clearTimeout(loadingTimer);
       player?.stop();

@@ -94,11 +94,16 @@ measure layout discovery in the empty state, not learning outcomes.
 
 ## Sensible next iterations
 
-Keep these separate from this navigation pass: a recent-song/project library that
-survives closing the browser, beginner scale positions/levels, editable rhythm
-and a richer creator, and microphone chord/technique assessment. Current chord
-checking is string by string; pitch matching cannot prove which string or finger
-was used. Same-page session retention is not permanent storage for imported files.
+Update, 8 November 2026: the recent-song/project foundation is now implemented
+using `songs/songs.json`, browser-persisted score files and checkpoints, personal
+practice overlays, and portable backups. It preserves the source catalogue rather
+than writing progress into the repository at runtime. Shared/cloud project sync
+would still be a separate feature.
+
+Further priorities are beginner scale positions/levels, editable rhythm and a
+richer creator, and microphone chord/technique assessment. Current chord checking
+is string by string; pitch matching cannot prove which string or finger was used.
+Saved projects now provide browser persistence; backups provide portability.
 
 Validation covers task entry, direct links, Back/Forward, draft recovery, restore
 after scale replacement, paused song retention, hidden-player shortcut guards,
