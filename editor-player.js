@@ -1,3 +1,4 @@
+import {mountQuickRiffBuilder} from './practice/quick-riff-builder.js';
 import practiceMarkup from './practice.html?raw';
 import { mountPractice } from './practice/main.js';
 import { lessonToAlphaTex } from './practice/lesson-converter.js';
@@ -71,3 +72,5 @@ for (const control of [tempo, duration]) {
 // The source editor owns shorthand parsing; the shared player is the only score.
 // Reuse the same update path for existing share URLs and the first page render.
 if (document.getElementById('input').value.trim()) window.updateOutput();
+
+mountQuickRiffBuilder();

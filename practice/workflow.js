@@ -17,13 +17,15 @@ export function mountWorkflow(root, { embedded, pause, stopMicrophone, checkChor
   if(songPicker){
     libraryHost=doc.createElement('section');libraryHost.id='project-library';libraryHost.setAttribute('aria-label','Persistent song library');songPicker.insertBefore(libraryHost,source);
     const folder=doc.createElement('details');folder.id='folder-library';folder.className='folder-library';const heading=doc.createElement('summary');heading.textContent='Files in your score folder';source.before(folder);folder.append(heading,source);
-    songPickerTitle.textContent='Your songs & saved projects';
+    songPickerTitle.textContent=import.meta.env.VITE_PUBLIC_SITE==='true'?'Song catalogue & browser projects':'Your songs & saved projects';
+    if(import.meta.env.VITE_PUBLIC_SITE==='true')folder.hidden=true;
   }
 
   const nav=doc.createElement('nav');nav.className='task-navigation';nav.setAttribute('aria-label','Main tasks');
   const tasks=[['write','Write',embedded?'#write':'./index.html#write'],['songs','Songs',embedded?'./practice.html#songs':'#songs'],['tuner','Tune','#tuner'],['chords','Chords','#chords'],['scales','Scales','#scales'],['riffs','Riffs','#riffs'],['notes','Learn notes','./notes.html']];
   for(const [task,label,href]of tasks){const a=doc.createElement('a');a.href=href;a.textContent=label;a.dataset.task=task;nav.append(a);}
   $('.page-header').lastElementChild?.remove();$('.page-header').append(nav);
+  const myFiles=doc.createElement('a');myFiles.href='./my-files.html';myFiles.textContent='My files';myFiles.className='my-files-link';$('.page-header').append(myFiles);
   $('.practice-link')?.remove();
   const title=$('.intro h1'), description=intro.querySelector('h1 + p'), eyebrow=intro.querySelector('.eyebrow');
   const copy={riffs:['Learn a riff','Find a short phrase, hear an example and practise until each note is clean.'],write:['Write a guitar tab','Keep the notes, chords and lyrics together. Update the preview, then practise what you wrote.'],songs:['Play a song','Open a score, slow it down and work on one passage at a time.'],play:['Practise your tab','Your writing is kept. Choose Score or Play-along, then press Play.'],tuner:['Tune your guitar','Start the microphone and pluck one string at a time. No song needed.'],chords:['Build a clean chord','Choose a shape, hold it, then check the sounding strings from low to high.'],scales:['Choose your next scale','Pick a key and pattern. Hear it played or let the microphone guide you note by note.']};

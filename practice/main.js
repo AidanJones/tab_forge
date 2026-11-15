@@ -558,6 +558,12 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     },
   });
 
+  if(!embedded){
+    const params=new URLSearchParams(location.search),projectId=params.get('project');
+    if(projectId)projects.ready.then(()=>{const project=projects.projects.find(item=>item.id===projectId);if(project)projects.open(project);else showError('This private project is not stored in this browser. Import its library backup on this device first.');});
+    else if(params.get('demo')==='1')$('demo')?.click();
+  }
+
   return {
     loadTex(text, source) {
       const request = ++sourceRequest;

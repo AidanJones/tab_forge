@@ -11,6 +11,7 @@ export async function songCatalogue() {
 }
 
 export async function listScores(directory = defaultDirectory) {
+  if(process.env.TAB_FORGE_PUBLIC_BUILD==='true')return [];
   const entries = await readdir(directory, { withFileTypes: true });
   return entries.filter(entry => entry.isFile() && scoreExtension.test(entry.name))
     .map(entry => ({ name: entry.name, url: `scores/${encodeURIComponent(entry.name)}` }))

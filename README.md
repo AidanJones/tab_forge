@@ -2,6 +2,50 @@
 
 Write guitar tabs, practise them slowly, and keep the chord shapes, lyrics and playing instructions together.
 
+## Hosted app and personal files
+
+GitHub Pages publishes the app at <https://aidanjones.github.io/tab_forge/>.
+The public home links to **Practice**, **Create** and **My files**; Kindle users
+can bookmark <https://aidanjones.github.io/tab_forge/kindle.html>.
+
+**My files** is a private browser library, not an account. Uploads are parsed and
+stored on the device in IndexedDB; no upload request sends score content to the
+site. It shares projects with the existing practice player. Download individual
+scores or a portable library backup, import a backup, or reopen a project.
+Browsers/profiles/devices have separate libraries and do not automatically sync.
+To move existing localhost projects to the hosted site, export a library backup
+at the original local address, then import it in the hosted My files area.
+
+**Choose local folder** uses the File System Access API when available. The user
+must pick a location and grant access. The app creates a `tab_forge` folder and
+writes a fresh dated backup subfolder when **Back up My files to folder** is
+pressed. Each snapshot contains the original score files, any creator lesson notes
+and a complete library backup. Older snapshots are not overwritten. Folder access
+is optional and may need reconnection; unsupported browsers use normal downloads.
+See [MDN's folder-picker requirements](https://developer.mozilla.org/en-US/docs/Web/API/Window/showDirectoryPicker).
+
+The creator's **Quick riff builder** lets users tap frets, undo notes and insert a
+sequence or chord without replacing existing lesson text. Preview/export uses the
+same standard score model. Guitar Pro export is currently `.gp` (GP7), alongside
+alphaTex and MIDI; GP4 import is supported, but a legacy GP4 writer is not included.
+
+### Deployment
+
+Pushes to `main` run `.github/workflows/pages.yml`: install pinned dependencies,
+run unit tests, build, verify the public artifact and deploy using GitHub Actions.
+Use `pnpm build:pages` for the public build, then `pnpm test:pages` to check the
+real `/tab_forge/` URL prefix locally. The published creator is `create.html`;
+local development keeps the existing `index.html` editor URL.
+
+The Pages build deliberately includes **only the app, catalogue and original
+exercises**. It uses a temporary public-asset allowlist and excludes local GP4
+binaries and all score pages rendered from them, even when downloaded files exist
+on the build machine. It never runs the GP4 restoration script. An artifact guard
+checks these constraints before upload. The normal `pnpm build` is still for local
+hosting and includes local score files; use `build:pages` for public publication.
+Browser projects, notes, drafts, directory handles and local folder backups are
+never inputs to the public deployment.
+
 ## Overview
 
 **tab_forge** is a browser tab editor and practice player. It renders one standard
