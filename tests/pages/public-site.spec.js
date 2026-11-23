@@ -30,3 +30,13 @@ test('public Home and My files fit a phone',async({page})=>{
   await page.screenshot({path:'test-results/pages/home-phone.png',fullPage:true});await page.locator('.page-header').getByRole('link',{name:'My files',exact:true}).click();await expect(page.getByRole('heading',{name:'My files',exact:true})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
+
+test('public spider exercise opens from home and returns to the selected permutation',async({page})=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.goto('./');
+  await page.getByRole('link',{name:'Spider · all 24 finger patterns',exact:true}).click();
+  await expect(page.locator('#spider-pattern option')).toHaveCount(24);
+  await page.getByLabel('Finger permutation').selectOption('2134');
+  await page.getByRole('button',{name:'Load spider tab',exact:true}).click();
+  await expect(page.locator('#play')).toBeEnabled();await expect(page.locator('#score-title')).toHaveText('Spider · 2134 · frets 5–8');
+  await page.getByRole('link',{name:'← Back to spider',exact:true}).click();await expect(page.getByLabel('Finger permutation')).toHaveValue('2134');expect(errors).toEqual([]);
+});

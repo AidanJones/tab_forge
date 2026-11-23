@@ -8,6 +8,7 @@ export function mountWorkflow(root, { embedded, pause, stopMicrophone, checkChor
   const tools=doc.createElement('section');tools.id='tools-panel';tools.hidden=true;tools.setAttribute('aria-label','Guitar practice tools');
   main.insertBefore(tools,embedded?editor:workspace);
   const riffs=doc.createElement('section');riffs.id='riff-library';riffs.hidden=true;main.insertBefore(riffs,tools);
+  const spider=doc.createElement('section');spider.id='spider-trainer';spider.hidden=true;main.insertBefore(spider,tools);
   const tuner=$('#guitar-tuner');tools.append(tuner);tuner.open=true;
   const summary=tuner.querySelector(':scope > summary');summary.hidden=true;
   const source=$('.library');
@@ -22,13 +23,13 @@ export function mountWorkflow(root, { embedded, pause, stopMicrophone, checkChor
   }
 
   const nav=doc.createElement('nav');nav.className='task-navigation';nav.setAttribute('aria-label','Main tasks');
-  const tasks=[['write','Write',embedded?'#write':'./index.html#write'],['songs','Songs',embedded?'./practice.html#songs':'#songs'],['tuner','Tune','#tuner'],['chords','Chords','#chords'],['scales','Scales','#scales'],['riffs','Riffs','#riffs'],['notes','Learn notes','./notes.html']];
+  const tasks=[['write','Write',embedded?'#write':'./index.html#write'],['songs','Songs',embedded?'./practice.html#songs':'#songs'],['tuner','Tune','#tuner'],['chords','Chords','#chords'],['scales','Scales','#scales'],['riffs','Riffs','#riffs'],['spider','Spider','#spider'],['notes','Learn notes','./notes.html']];
   for(const [task,label,href]of tasks){const a=doc.createElement('a');a.href=href;a.textContent=label;a.dataset.task=task;nav.append(a);}
   $('.page-header').lastElementChild?.remove();$('.page-header').append(nav);
   const myFiles=doc.createElement('a');myFiles.href='./my-files.html';myFiles.textContent='My files';myFiles.className='my-files-link';$('.page-header').append(myFiles);
   $('.practice-link')?.remove();
   const title=$('.intro h1'), description=intro.querySelector('h1 + p'), eyebrow=intro.querySelector('.eyebrow');
-  const copy={riffs:['Learn a riff','Find a short phrase, hear an example and practise until each note is clean.'],write:['Write a guitar tab','Keep the notes, chords and lyrics together. Update the preview, then practise what you wrote.'],songs:['Play a song','Open a score, slow it down and work on one passage at a time.'],play:['Practise your tab','Your writing is kept. Choose Score or Play-along, then press Play.'],tuner:['Tune your guitar','Start the microphone and pluck one string at a time. No song needed.'],chords:['Build a clean chord','Choose a shape, hold it, then check the sounding strings from low to high.'],scales:['Choose your next scale','Pick a key and pattern. Hear it played or let the microphone guide you note by note.']};
+  const copy={spider:['Build independent fingers','Choose one of 24 spider patterns, then practise across all six strings.'],riffs:['Learn a riff','Find a short phrase, hear an example and practise until each note is clean.'],write:['Write a guitar tab','Keep the notes, chords and lyrics together. Update the preview, then practise what you wrote.'],songs:['Play a song','Open a score, slow it down and work on one passage at a time.'],play:['Practise your tab','Your writing is kept. Choose Score or Play-along, then press Play.'],tuner:['Tune your guitar','Start the microphone and pluck one string at a time. No song needed.'],chords:['Build a clean chord','Choose a shape, hold it, then check the sounding strings from low to high.'],scales:['Choose your next scale','Pick a key and pattern. Hear it played or let the microphone guide you note by note.']};
 
   // Put the thing being played before the optional helpers and configuration.
   const switcher=$('.player-view-switch'), view=$('#play-along'), score=$('#score-viewport');
@@ -106,19 +107,19 @@ export function mountWorkflow(root, { embedded, pause, stopMicrophone, checkChor
   inline.addEventListener('toggle',()=>{if(!inline.open && task==='scales')stopMicrophone();});
   function apply({ focus=false, keepMicrophone=false }={}) {
     const hash=location.hash.slice(1);
-    const next=['tuner','chords','scales','riffs',...(embedded?['write','play']:['songs'])].includes(hash)?hash:embedded?'write':'songs';
+    const next=['tuner','chords','scales','riffs','spider',...(embedded?['write','play']:['songs'])].includes(hash)?hash:embedded?'write':'songs';
     if(task && task!==next){pause();if(!keepMicrophone)stopMicrophone();}
     task=next;doc.body.dataset.task=task;
     const brandContext=$('.brand span');if(brandContext)brandContext.textContent=`/ ${task==='play'?'Your tab':tasks.find(entry=>entry[0]===task)?.[1]||task}`;
     if(task==='write')back.hidden=true;
-    const tool=['tuner','chords','scales','riffs'].includes(task);
-    riffs.hidden=task!=='riffs';
-    tools.hidden=!tool||task==='riffs';
+    const tool=['tuner','chords','scales','riffs','spider'].includes(task);
+    riffs.hidden=task!=='riffs';spider.hidden=task!=='spider';
+    tools.hidden=!tool||['riffs','spider'].includes(task);
     if(embedded){editor.hidden=tool;editor.classList.toggle('focused-practice',task==='play');}
     else {workspace.hidden=tool;source.hidden=tool;songPicker.hidden=tool;$('.file-actions').hidden=tool;guide.hidden=tool;}
     title.textContent=copy[task][0];description.textContent=copy[task][1];eyebrow.textContent=tool?'Your guitar toolkit':embedded?'Write · hear · practise':'Your practice session';
     for(const a of nav.querySelectorAll('a')){if(a.dataset.task===(task==='play'?'write':task))a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');}
-    if(tool && task!=='riffs'){
+    if(tool && !['riffs','spider'].includes(task)){
       $('.independent-trainers').hidden=task==='tuner';
       if(task!=='tuner'){$('.trainer-mode').value=task==='chords'?'chord':'scale';$('.trainer-mode').dispatchEvent(new Event('change'));}
       tuner.dataset.tool=task;
@@ -134,7 +135,7 @@ export function mountWorkflow(root, { embedded, pause, stopMicrophone, checkChor
   window.addEventListener('hashchange',()=>apply({focus:true}));
   doc.addEventListener('tab-forge:practice-open',event=>{
     if(songPicker)songPicker.open=false;
-    const from=event.detail.from;returnLink.href=from==='riffs'?'#riffs':'#scales';returnLink.textContent=from==='riffs'?'← Back to riffs':'← Back to scales';back.hidden=!['scales','riffs'].includes(from);
+    const from=event.detail.from;const origin=['riffs','spider'].includes(from)?from:'scales';returnLink.href=`#${origin}`;returnLink.textContent=`← Back to ${origin}`;back.hidden=!['scales','riffs','spider'].includes(from);
     // Apply immediately so the caller can focus the now-visible player. The
     // following hashchange sees the same task and does not stop the microphone.
     const destination=embedded?'#play':'#songs';
@@ -145,7 +146,7 @@ export function mountWorkflow(root, { embedded, pause, stopMicrophone, checkChor
   apply();
   let hadScore=false,wasReady=false;
   songPicker?.addEventListener('toggle',()=>{if(songPicker.open&&hadScore)pause();});
-  return { libraryHost, riffHost:riffs, update(state) {
+  return { libraryHost, riffHost:riffs, spiderHost:spider, update(state) {
     workspace.classList.toggle('has-score',state.tracks.length>0);
     if(embedded)guide.textContent=state.ready?'Your tab is ready. Practise this tab for a focused player; Back to writing returns to your notes.':'Update the preview to hear your tab. Your draft is kept in this browser.';
     if(!embedded)guide.hidden=tools.hidden?state.tracks.length>0:true;

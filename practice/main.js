@@ -5,6 +5,7 @@ import { MidiOutput } from './midi-output.js';
 import { download, scoreFilename } from './download.js';
 import { PlayAlong } from './play-along.js';
 import { Tuner } from './tuner.js';
+import { SpiderTrainer } from './spider.js';
 import { Trainers } from './trainers.js';
 import { mountWorkflow } from './workflow.js';
 import { RiffLibrary } from './riffs.js';
@@ -29,11 +30,12 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     if(changed && state.state==='listening' && document.activeElement===$('follow-microphone'))$('play').focus({preventScroll:true});
     renderFollowMicrophone(state);
   } });
-  trainers = new Trainers($('guitar-tuner'), (exercise, {wait=false} = {}) => {
-    document.dispatchEvent(new CustomEvent('tab-forge:practice-open',{detail:{from:'scales',wait}}));
+  const loadTechnique = (exercise, {wait=false} = {}) => {
+    const from=exercise.from||'scales';
+    document.dispatchEvent(new CustomEvent('tab-forge:practice-open',{detail:{from,wait}}));
     root.querySelector('[data-player-view="score"]').click();
-    pendingFollowExercise={title:exercise.title,wait,from:'scales'};
-    if (embedded) {
+    pendingFollowExercise={title:exercise.title,wait,from};
+    if (embedded && from!=='spider') {
       root.dispatchEvent(new CustomEvent('tab-forge:exercise', { bubbles:true, detail:exercise }));
       return;
     }
@@ -42,9 +44,10 @@ export function mountPractice(root = document, { embedded = false } = {}) {
       const instance=await ensurePlayer();
       if(request!==sourceRequest)return;
       projects?.begin();
-      watchLoading();instance.loadTex(exercise.tex,'Scale trainer');
+      watchLoading();instance.loadTex(exercise.tex,from==='spider'?'Spider trainer':'Scale trainer');
     });
-  });
+  };
+  trainers = new Trainers($('guitar-tuner'), loadTechnique);
   const fretboard = new Fretboard($('finger-guide'));
   const playAlong = new PlayAlong($('play-along'));
   for (const button of root.querySelectorAll('[data-player-view]')) button.addEventListener('click', () => {
@@ -304,6 +307,7 @@ export function mountPractice(root = document, { embedded = false } = {}) {
       pendingFollowExercise=null;
       if(intent.session){player.restoreSession(intent.session);state=player.snapshot;}
       if(intent.from==='riffs')document.dispatchEvent(new CustomEvent('tab-forge:riff-loaded'));
+      if(intent.from==='spider')document.dispatchEvent(new CustomEvent('tab-forge:spider-loaded'));
       document.dispatchEvent(new CustomEvent('tab-forge:practice-open',{detail:intent}));
       $('play-along-mode').value=intent.wait?'wait':'timed';
       root.querySelector(`[data-player-view="${intent.wait?'scrolling':'score'}"]`).click();
@@ -404,7 +408,7 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     if(projects.active){if(await projects.flush(latest))projects.message('Practice checkpoint saved in this browser.');return;}
     const request=sourceRequest;
     const file=new File([player.exportFile('gp')],scoreFilename(latest.title,'gp'),{type:'application/octet-stream'});
-    await projects.remember(file,latest,null,embedded&&latest.source!=='Riff trainer'?document.querySelector('#input').value:null,()=>request===sourceRequest,false);
+    await projects.remember(file,latest,null,embedded&&!['Riff trainer','Spider trainer'].includes(latest.source)?document.querySelector('#input').value:null,()=>request===sourceRequest,false);
     if(request===sourceRequest){projects.update(latest);await projects.flush();}
   }));
   $('print-score').addEventListener('click', () => run(() => player.printScore()));
@@ -516,6 +520,7 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     trainers.resetChord();document.querySelector('.trainer-listen').checked=true;
     if(tuner.latest?.state!=='listening')tuner.mic.start(tuner.$('.tuner-input').value);
   }});
+  new SpiderTrainer(workflow.spiderHost,loadTechnique);
   new RiffLibrary(workflow.riffHost,{
     load:(exercise,{wait=false}={})=>{
       document.dispatchEvent(new CustomEvent('tab-forge:practice-open',{detail:{from:'riffs',wait}}));

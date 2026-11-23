@@ -251,6 +251,17 @@ Microphone implementation uses browser
 and an unconnected
 [AnalyserNode](https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode).
 
+Choose **Spider** for finger-independence practice. All 24 permutations of fingers
+1–4 are available (index, middle, ring, little), with **Next permutation** cycling
+through them. The default plays 1–2–3–4–3–2–1 on each string before moving from
+low E to high e. Switch off the return or reverse the string direction, move the
+four-fret position with **Index finger fret**, and set the tempo before loading.
+Each string is one bar (7/4 with the return, 4/4 without); finger assignments are
+written into the score and exports. **Practise spider with microphone** opens
+the scrolling player in wait-for-note mode; pitch checking cannot verify which
+finger was used. **Back to spider** keeps the settings. In the editor, this
+exercise plays separately and keeps the lesson draft.
+
 Choose **Play-along** above the score in the editor or Practice page for scrolling
 string lanes. **Start delay** defaults to a visible three-second countdown before
 starting or resuming; choose Off or five seconds if preferred. Both Play buttons
