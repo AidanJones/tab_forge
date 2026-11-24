@@ -45,8 +45,9 @@ test('spider waits for the correct pitch through the return and next string',asy
     }});
   });
   await page.goto('/practice.html#spider');await page.getByRole('button',{name:'Practise spider with microphone',exact:true}).click();
-  await page.locator('#follow-microphone').click();await expect(page.locator('#play')).toBeEnabled();
-  await page.getByLabel('Play-along start delay').selectOption('0');await page.locator('#play').click();
+  await expect(page.locator('#play')).toBeEnabled();await expect(page.locator('#play')).toBeFocused();
+  await expect(page.locator('#follow-controls #play')).toBeVisible();
+  await page.locator('#play').click();await expect(page.locator('#play-along-countdown')).toBeVisible();
   await expect(page.locator('.play-along-status')).toContainText('0 / 42 played');
   await expect(page.locator('.play-along-status')).toContainText('Heard A4');
   // Index/middle/ring/little then back to index on low E, then index on A.
@@ -54,5 +55,5 @@ test('spider waits for the correct pitch through the return and next string',asy
     await page.evaluate(midi=>window.spiderPitch(midi),midi);
     await expect(page.locator('.play-along-status')).toContainText(`${i+1} / 42 played`);
   }
-  await page.locator('#follow-microphone').click();await expect(page.locator('#play')).toBeDisabled();
+  await page.locator('#follow-microphone').click();await expect(page.locator('#play')).toBeEnabled();await expect(page.locator('#play')).toHaveText('Start listening');
 });

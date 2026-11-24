@@ -152,7 +152,7 @@ test('a scale flows into microphone-driven scrolling: wrong notes hold, correct 
   await page.getByLabel('Scale key').selectOption('4');await page.getByLabel('Scale type').selectOption('minorPentatonic');await page.getByLabel('Scale direction').selectOption('up');
   await page.getByRole('button',{name:'Practise scale with microphone',exact:true}).click();
   await expect(page.getByLabel('Play-along mode')).toHaveValue('wait');await expect(page.locator('#play-along')).toBeVisible();
-  await expect(page.locator('#play')).toBeDisabled();
+  await expect(page.locator('#play')).toBeEnabled();
   await page.locator('#follow-microphone').click();
   await expect(page.locator('#play')).toBeEnabled();
   await expect(page.locator('#play')).toBeFocused();
@@ -176,7 +176,7 @@ test('a scale flows into microphone-driven scrolling: wrong notes hold, correct 
   await page.getByLabel('Play-along start delay').selectOption('3');
   await page.locator('#play').click();await expect(page.locator('#play-along-countdown')).toBeVisible();
   await page.locator('#follow-microphone').click();await expect(page.locator('#play-along-countdown')).toBeHidden();
-  await expect(page.locator('#play')).toBeDisabled();
+  await expect(page.locator('#play')).toBeEnabled();
   expect(errors).toEqual([]);
 });
 
@@ -192,7 +192,7 @@ test('editor scale shortcut opens wait mode, shows the target at the line and st
   await page.waitForTimeout(200);await expect(page.locator('.play-along-status')).not.toContainText('try again');
   await page.locator('#play-along').screenshot({path:'test-results/scale-wait-mobile.png'});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
-  await page.locator('#follow-microphone').click();await expect(page.locator('#play')).toBeDisabled();
+  await page.locator('#follow-microphone').click();await expect(page.locator('#play')).toBeEnabled();
   await page.getByLabel('Play-along mode').selectOption('timed');await expect(page.locator('#play')).toBeEnabled();
 });
 

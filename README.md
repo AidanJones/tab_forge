@@ -258,7 +258,11 @@ low E to high e. Switch off the return or reverse the string direction, move the
 four-fret position with **Index finger fret**, and set the tempo before loading.
 Each string is one bar (7/4 with the return, 4/4 without); finger assignments are
 written into the score and exports. **Practise spider with microphone** opens
-the scrolling player in wait-for-note mode; pitch checking cannot verify which
+the scrolling player in wait-for-note mode. **Start listening** sits beside the
+strings and enables the microphone, asks permission if needed, then starts the
+selected countdown. There is no need to return to the upper playback controls.
+Pause keeps the microphone on; **Stop microphone** releases it. The same controls
+also serve scale and riff listening. Pitch checking cannot verify which
 finger was used. **Back to spider** keeps the settings. In the editor, this
 exercise plays separately and keeps the lesson draft.
 
