@@ -5,6 +5,7 @@ import { MidiOutput } from './midi-output.js';
 import { download, scoreFilename } from './download.js';
 import { PlayAlong } from './play-along.js';
 import { Tuner } from './tuner.js';
+import { RhythmTrainer } from './rhythm-trainer.js';
 import { SpiderTrainer } from './spider.js';
 import { Trainers } from './trainers.js';
 import { mountWorkflow } from './workflow.js';
@@ -547,6 +548,7 @@ export function mountPractice(root = document, { embedded = false } = {}) {
     if(tuner.latest?.state!=='listening')tuner.mic.start(tuner.$('.tuner-input').value);
   }});
   new SpiderTrainer(workflow.spiderHost,loadTechnique);
+  new RhythmTrainer(workflow.rhythmHost,{beforeStart:()=>{player?.stop();tuner.mic.stop();}});
   new RiffLibrary(workflow.riffHost,{
     load:(exercise,{wait=false}={})=>{
       document.dispatchEvent(new CustomEvent('tab-forge:practice-open',{detail:{from:'riffs',wait}}));

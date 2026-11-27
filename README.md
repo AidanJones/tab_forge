@@ -251,6 +251,51 @@ Microphone implementation uses browser
 and an unconnected
 [AnalyserNode](https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode).
 
+Choose **Rhythm** for picking and strumming against a metronome. The editable
+4/4 grid has eight eighth-note slots, counted **1 + 2 + 3 + 4 +**. Solid slots
+sound; empty slots keep the down/up motion without touching the strings. Presets
+include the requested **1, 2 +, 3 +, 4** rhythm, straight picking, and DDUU/DDUUDU
+strumming. Fourteen editable templates now include straight eighths, down/down-up,
+island strumming, offbeat upstrokes, forward/reverse fingerstyle rolls,
+alternating-bass thumb practice and single-note Travis/inside-out preparation.
+Choose a **Practice chord**: picking templates derive the bass string, frets and
+target pitches from the same chord shapes used elsewhere in the app, including
+slash chords. Cards show plucking finger (P/I/M/A), string and fret. Under
+**Target notes**, change the picking strings or switch to custom pitch targets.
+Muted strings are rejected before microphone capture. Strumming accepts any
+chord and remains timing-only; selecting a chord is a guide, not a claim of
+polyphonic chord recognition. Standard tuning, no capo.
+
+These are original practice variations of standard techniques, not song or
+lesson transcriptions. Selected templates link to their technique references:
+[Fender's alternating-bass/Travis lesson](https://www.fender.com/articles/techniques/travis-picking-on-guitar),
+[Andy Guitar's fingerstyle introduction](https://www.andyguitar.co.uk/videos/introduction-to-fingerstyle),
+[JustinGuitar's strumming lesson](https://www.justinguitar.com/guitar-lessons/the-strumming-pattern-b1-404)
+and [MuseScore's strumming guide](https://musescore.com/articles/materials/guitar/guitar-strumming-patterns).
+This first trainer covers straight eighth-note patterns in 4/4, not 3/4, 6/8,
+swung eighths, sixteenths, or simultaneous fingerstyle pinches.
+
+Start at 50 BPM with a four-beat count-in. A fresh microphone attack within the
+timing window earns Perfect/Good/Close points, with early/late feedback, streaks,
+accuracy and milestone badges. Picking can add 50 points for the selected target
+pitch; strumming grades timing only. Microphone audio is analysed locally, never
+uploaded or connected to speakers. Use headphones so clicks are not detected as
+playing. A held note earns no repeated attacks. Detection depends on clear
+attacks and capture latency; sensitivity, noise floor, input and manual timing
+correction are available under the optional settings.
+
+Adaptive tempo adds 5 BPM after three bars with at least 85% accurately timed
+notes and no extra strokes; two bars with fewer than 60% hits or repeated extras
+reduce it by 5 BPM. Future bars use the new tempo, preserving already scheduled
+clicks. Minimum and maximum limits bound adaptation. Changing BPM while playing
+switches to manual tempo. Stop before editing the pattern, input or note targets;
+starting again resets the round. Tap/Space mode offers timing-only practice
+without microphone access. Leaving the trainer or hiding the page stops capture
+and the metronome. This estimates attack timing and single pitches; it cannot
+verify a down/up stroke, fingering, or the quality of a strummed chord. Turn off
+**Award single-note pitch bonuses** to practise ringing arpeggios or simultaneous
+pinches with timing scores only.
+
 Choose **Spider** for finger-independence practice. All 24 permutations of fingers
 1–4 are available (index, middle, ring, little), with **Next permutation** cycling
 through them. The default plays 1–2–3–4–3–2–1 on each string before moving from

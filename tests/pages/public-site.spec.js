@@ -40,3 +40,13 @@ test('public spider exercise opens from home and returns to the selected permuta
   await expect(page.locator('#play')).toBeEnabled();await expect(page.locator('#score-title')).toHaveText('Spider · 2134 · frets 5–8');
   await page.getByRole('link',{name:'← Back to spider',exact:true}).click();await expect(page.getByLabel('Finger permutation')).toHaveValue('2134');expect(errors).toEqual([]);
 });
+
+test('public rhythm trainer maps a selected chord and starts a timing round without microphone uploads',async({page})=>{
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('./');
+  await page.getByRole('link',{name:'Picking & strumming · rhythm trainer',exact:true}).click();
+  await page.getByRole('combobox',{name:'Pattern',exact:true}).selectOption('travis');await page.getByLabel('Practice chord',{exact:true}).selectOption('C');
+  await expect(page.locator('#rhythm-grid button').first()).toContainText('3f C3');
+  await page.getByRole('combobox',{name:'Input',exact:true}).selectOption('tap');await page.locator('#rhythm-start').click();
+  await expect(page.locator('#rhythm-count')).toContainText('Ready');await page.locator('#rhythm-stop').click();
+  await expect(page.locator('#rhythm-start')).toBeEnabled();expect(errors).toEqual([]);
+});
