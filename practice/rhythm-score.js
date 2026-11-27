@@ -34,6 +34,17 @@ export class RhythmScore {
     this.host=host;this.slot=-1;this.view='tab';this.waiters=new Set();
     host.innerHTML=`<div class="rhythm-score-heading"><strong>Read the pattern</strong><label>Show <select id="rhythm-notation" aria-label="Rhythm notation"><option value="tab">Tab</option><option value="sheet">Sheet music</option><option value="both">Tab + sheet music</option></select></label></div><p id="rhythm-score-help">Eight eighth-note slots. Rests are the silent gaps; the highlighted beat follows the count.</p><div class="rhythm-score-scroll" tabindex="0" aria-label="Rhythm tab or sheet music"><div class="rhythm-score-canvas"><div id="rhythm-score"></div><div class="rhythm-score-cursor" hidden aria-hidden="true"></div></div></div><p id="rhythm-score-status" role="status">Preparing tab…</p>`;
     this.$=s=>host.querySelector(s);
+    const key=document.createElement('details');key.className='rhythm-symbol-key';
+    key.innerHTML=`<summary>Symbol key</summary><dl>
+      <div><dt><span class="rhythm-rest-symbol" aria-hidden="true">&#xE4E6;</span><strong>Eighth rest</strong></dt><dd>Half a beat: one empty slot in 1 + 2 + 3 + 4 +. This is the rest symbol shown in these patterns.</dd></div>
+      <div><dt><span class="rhythm-rest-symbol" aria-hidden="true">&#xE4E5;</span><strong>Quarter rest</strong></dt><dd>One full beat: two eighth-note slots.</dd></div>
+      <div><dt><span class="rhythm-key-text" aria-hidden="true">0 · 3</span><strong>Tab numbers</strong></dt><dd>0 means an open string. Other numbers tell you which fret to hold; 3 means fret 3. Stacked numbers are played together.</dd></div>
+      <div><dt><span class="rhythm-key-text" aria-hidden="true">×</span><strong>Unspecified attack</strong></dt><dd>In this trainer, a cross is a timing-only placeholder when no pitch or chord is selected.</dd></div>
+      <div><dt><span class="rhythm-key-text" aria-hidden="true">↓ ↑</span><strong>Stroke direction</strong></dt><dd>Down on the numbers, up on +. The score uses the standard downstroke bracket and upstroke V marks.</dd></div>
+      </dl><p>A half rest lasts two full beats, not half a beat. In music, a rest means silence. In this attack-timing exercise, an empty slot means no new pluck or strum: you can still let the previous sound ring. A song score may use ties or “let ring” to show that sustain.</p>`;
+    const keyContent=document.createElement('div');keyContent.className='rhythm-key-content';keyContent.append(...[...key.children].slice(1));const closeKey=document.createElement('button');closeKey.type='button';closeKey.textContent='Close key';keyContent.append(closeKey);key.append(keyContent);
+    const close=()=>{key.open=false;key.querySelector('summary').focus({preventScroll:true});};closeKey.addEventListener('click',close);key.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();close();}});
+    this.$('.rhythm-score-heading strong').replaceWith(key);
     this.$('#rhythm-notation').addEventListener('change',()=>{this.view=this.$('#rhythm-notation').value;this.render();});
     window.addEventListener('hashchange',()=>this.render());window.addEventListener('popstate',()=>this.render());
     window.addEventListener('pagehide',event=>{if(!event.persisted){this.destroyed=true;this.api?.destroy();}});

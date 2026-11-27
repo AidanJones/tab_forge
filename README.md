@@ -275,6 +275,18 @@ and [MuseScore's strumming guide](https://musescore.com/articles/materials/guita
 This first trainer covers straight eighth-note patterns in 4/4, not 3/4, 6/8,
 swung eighths, sixteenths, or simultaneous fingerstyle pinches.
 
+The Kindle reader now has **Rhythm**, **Spider**, and **Chords & fingers** sections.
+Rhythm offers the same 14 patterns, chord choices, prepared tab/sheet music and
+visual rest-symbol key. Spider has all 24 finger permutations, frets 1–21,
+optional return patterns and manual string-by-string pages with finger maps.
+Chord diagrams can show static skeleton-finger examples rendered from the full
+app's constrained hand model; unsafe suggestions stay unavailable. Scale and
+natural-note pages include drawn fretboards, and the circle of fifths has a
+diagram as well as its table. These views use monochrome SVG, classic JavaScript
+and explicit redraw buttons, with no WebGL, workers or browser audio dependency.
+Use an external metronome on Kindle; microphone scoring, rewards and adaptive
+tempo remain in the full app. Actual Kindle hardware has not been tested.
+
 The Rhythm practice view opens with a conventional **Tab** preview. **Show**
 switches to **Sheet music** or **Tab + sheet music**. The same eight slots produce
 eighth notes and rests, with chord names, selected frets and strum directions;

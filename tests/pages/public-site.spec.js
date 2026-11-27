@@ -52,3 +52,11 @@ test('public rhythm trainer maps a selected chord and starts a timing round with
   await expect(page.locator('#rhythm-count')).toContainText('Ready');await page.locator('#rhythm-stop').click();
   await expect(page.locator('#rhythm-start')).toBeEnabled();expect(errors).toEqual([]);
 });
+
+test('hosted Kindle includes rhythm scores, finger drawings and Spider without media APIs',async({page})=>{
+  await page.addInitScript(()=>{for(const name of ['AudioContext','Worker','indexedDB','fetch'])Object.defineProperty(window,name,{value:undefined,configurable:true});});
+  await page.goto('kindle.html');await expect(page.locator('#reader-status')).toHaveText('Ready.');
+  await page.getByRole('button',{name:'Rhythm',exact:true}).click();await expect(page.locator('.reader-score svg').first()).toBeVisible();
+  await expect(page.locator('.reader-chord')).toBeVisible();await page.getByRole('button',{name:'Show / hide skeleton finger example',exact:true}).click();await expect(page.locator('.reader-hand svg')).toBeVisible();
+  await page.getByRole('button',{name:'Spider',exact:true}).click();await expect(page.getByLabel('Finger permutation').locator('option')).toHaveCount(24);await expect(page.locator('.reader-fretboard')).toBeVisible();
+});

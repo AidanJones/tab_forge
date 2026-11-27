@@ -3,6 +3,8 @@ import {test,expect} from '@playwright/test';
 test('rhythm opens with conventional tab, optional notation and a separate editable grid',async({page})=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/practice.html#rhythm');
   await expect(page.locator('#rhythm-score svg').first()).toBeVisible();await expect(page.getByLabel('Rhythm notation')).toHaveValue('tab');
+  await page.getByText('Symbol key',{exact:true}).click();await expect(page.locator('.rhythm-key-content')).toContainText('Eighth rest');await expect(page.locator('.rhythm-key-content')).toContainText('Half a beat');
+  await page.locator('.rhythm-key-content').screenshot({path:'test-results/rhythm-symbol-key.png'});await page.getByRole('button',{name:'Close key',exact:true}).click();await expect(page.locator('.rhythm-key-content')).toBeHidden();
   await expect(page.locator('.rhythm-pattern-editor')).not.toHaveAttribute('open');
   const tabHeight=await page.locator('#rhythm-score').evaluate(n=>n.getBoundingClientRect().height);
   await page.getByLabel('Rhythm notation').selectOption('both');await expect.poll(()=>page.locator('#rhythm-score').evaluate(n=>n.getBoundingClientRect().height)).toBeGreaterThan(tabHeight+35);

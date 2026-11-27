@@ -5,6 +5,7 @@ import {ROOTS,SCALES,scalePatterns,scaleExercise} from './exercises.js';
 import {RIFFS} from './riffs.js';
 import {FIFTHS} from './scale-map.js';
 import {DEMO} from './demo.js';
+import {readerVisualCatalogue} from './eink-visuals.js';
 
 export const readerSongId=id=>createHash('sha256').update(id).digest('hex').slice(0,16);
 export function readerSong(data,id){const song=catalogueEntries(data).find(s=>!s.archived&&readerSongId(s.catalogueId)===id);if(!song)throw new Error('Song not found.');return song;}
@@ -14,7 +15,7 @@ export function readerCatalogue(data,files=[],availability=[]) {
     bpm:s.bpm,tuning:s.tuning,capo:s.capo,chords:s.chords,techniques:s.techniques,
     suggested:s.suggested,needs_check:s.needs_check,hasGp4:(s.guitar_pro_files||[]).some(f=>f.format==='gp4'),localGp4Files:availability.filter(f=>f.songId===s.catalogueId&&f.local).map(f=>f.filename),
   }));
-  return {songs,genres:songFilterOptions(songs,'genre'),keys:songFilterOptions(songs,'key'),roots:ROOTS,
+  return {...readerVisualCatalogue(),songs,genres:songFilterOptions(songs,'genre'),keys:songFilterOptions(songs,'key'),roots:ROOTS,
     scales:Object.entries(SCALES).map(([id,s])=>({id,name:s.name})),fifths:FIFTHS,
     riffs:RIFFS.map(r=>({...r,notes:r.tab.split('|').flatMap(b=>b.trim().split(/\s+/)).map(n=>{const [fret,string]=n.split('.').map(Number);return {fret,string};})})),
     files:[{id:'demo',name:'Original demo · First steps'},...files.map(f=>({id:f.id,name:f.name}))]};

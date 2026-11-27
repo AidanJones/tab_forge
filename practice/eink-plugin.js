@@ -6,9 +6,18 @@ import {join} from 'node:path';
 import {readerCatalogue,readerScale,readerScore,readerSong} from './eink-data.js';
 import {songCatalogue,listScores,scoreAvailability} from './score-library-plugin.js';
 import {SCALES} from './exercises.js';
+import {readerRhythmData,readerChordDiagram,READER_CHORDS} from './eink-visuals.js';
+import {RHYTHM_PRESETS} from './rhythm-patterns.js';
 const directory=fileURLToPath(new URL('../public/scores/',import.meta.url));
 async function files(){return (await listScores()).map(file=>({...file,id:createHash('sha256').update(file.name).digest('hex').slice(0,16)}));}
 const scoreCache=new Map();
+const rhythmCache=new Map();
+function rhythm(id,chord,notation){
+  const key=`${id}-${chord}-${notation}`;if(rhythmCache.has(key))return rhythmCache.get(key);
+  const data=readerRhythmData(id,chord),rendered=readerScore(new TextEncoder().encode(data.notation.tex),{name:'rhythm.tex',notation});
+  const result={title:data.title,chord:data.chord,description:data.description,hits:data.hits,plan:data.plan,pages:rendered.pages};
+  rhythmCache.set(key,result);return result;
+}
 function renderInWorker(bytes,options){
   return new Promise((resolve,reject)=>{
     const worker=new Worker(new URL('./eink-score-worker.js',import.meta.url),{workerData:{bytes:new Uint8Array(bytes),options}});
@@ -36,6 +45,8 @@ export function einkReader(){return {
       let data;
       if(path==='/eink/catalog.json'){const source=await songCatalogue();data=readerCatalogue(source,await files(),await scoreAvailability(source));}
       else if(/^\/eink\/song\/[a-f0-9]{16}\.json$/.test(path))data=readerSong(await songCatalogue(),path.split('/').pop().slice(0,-5));
+      else if(/^\/eink\/rhythm\/[A-Za-z]+-\d+-(tab|sheet|both)\.json$/.test(path)){const m=path.match(/\/([A-Za-z]+)-(\d+)-(tab|sheet|both)\.json$/);data=rhythm(m[1],Number(m[2]),m[3]);}
+      else if(/^\/eink\/chord\/\d+\.json$/.test(path)){const index=Number(path.match(/\/(\d+)\.json$/)[1]);data=readerChordDiagram(READER_CHORDS[index]);}
       else if(/^\/eink\/scale\/\d+-[A-Za-z]+\.json$/.test(path)){
         const match=path.match(/\/(\d+)-([A-Za-z]+)\.json$/);data=readerScale(Number(match[1]),match[2]);
       }else if(/^\/eink\/score\/(demo|[a-f0-9]{16})-\d+-(both|tab|sheet)(?:-\d+)?\.json$/.test(path)){
@@ -49,6 +60,10 @@ export function einkReader(){return {
     for(const song of catalogue.songs)this.emitFile({type:'asset',fileName:`eink/song/${song.readerId}.json`,source:JSON.stringify(readerSong(source,song.readerId))});
     this.emitFile({type:'asset',fileName:'eink/catalog.json',source:JSON.stringify(catalogue)});
     for(let root=0;root<12;root++)for(const type of Object.keys(SCALES))this.emitFile({type:'asset',fileName:`eink/scale/${root}-${type}.json`,source:JSON.stringify(readerScale(root,type))});
+    for(const [index,name]of READER_CHORDS.entries()){
+      this.emitFile({type:'asset',fileName:`eink/chord/${index}.json`,source:JSON.stringify(readerChordDiagram(name))});
+      for(const id of Object.keys(RHYTHM_PRESETS))for(const notation of ['tab','sheet','both'])this.emitFile({type:'asset',fileName:`eink/rhythm/${id}-${index}-${notation}.json`,source:JSON.stringify(rhythm(id,index,notation))});
+    }
     for(const id of ['demo',...available.map(f=>f.id)]){
       let initial;try{initial=await score(id,0,'both',available);}catch(error){this.emitFile({type:'asset',fileName:`eink/score/${id}-0-both.json`,source:JSON.stringify({error:error.message})});continue;}
       const choices=initial.tracks.some(t=>t.id===0)?initial.tracks:[{id:0},...initial.tracks];

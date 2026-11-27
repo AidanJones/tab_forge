@@ -4,6 +4,9 @@ import {readFile} from 'node:fs/promises';
 import {readerCatalogue,readerSong,readerScale,readerScore} from '../practice/eink-data.js';
 import {songCatalogue} from '../practice/score-library-plugin.js';
 import {DEMO} from '../practice/demo.js';
+import {readerRhythmData,readerChordDiagram,READER_CHORDS} from '../practice/eink-visuals.js';
+import {chordFingerExample} from '../practice/finger-examples.js';
+import {CHORD_LIBRARY} from '../practice/chord-library.js';
 
 test('reader catalogue is compact, retains stable IDs and loads resources separately',async()=>{
   const source=await songCatalogue(),catalogue=readerCatalogue(source);
@@ -35,4 +38,12 @@ test('reader prefers guitar/bass tracks over a vocal part at index zero',()=>{
   const tex=DEMO.replace('\\instrument 25','\\instrument 73').replace('\\track "Guitar"','\\track "Voice"');
   const rendered=readerScore(new TextEncoder().encode(tex),{name:'arrangement.tex'});
   assert.equal(rendered.track,1);assert.equal(rendered.tracks[0].name,'Bass');
+});
+
+test('Kindle rhythm metadata and monochrome finger drawings reuse the full-app exercises and hand model',async()=>{
+  const catalogue=readerCatalogue(await songCatalogue());assert.equal(catalogue.rhythms.length,14);assert.equal(catalogue.spiderPatterns.length,24);assert.equal(catalogue.chords.length,READER_CHORDS.length);
+  const c=READER_CHORDS.indexOf('C'),exercise=readerRhythmData('arpeggio',c);assert.equal(exercise.plan[0].midi,48);assert.equal(exercise.plan[0].string,5);
+  const rendered=readerScore(new TextEncoder().encode(exercise.notation.tex),{name:'rhythm.tex',notation:'tab'});assert(rendered.pages[0].svg.includes('<svg'));
+  const diagram=readerChordDiagram('G/B'),model=chordFingerExample({strings:[...CHORD_LIBRARY['G/B']].reverse()});assert.deepEqual(diagram.assignments,model.variant.assignments);assert.equal(diagram.available,true);assert(diagram.svg.includes('cartoon-bone'));assert.match(diagram.svg,/viewBox="0 0 200 160"/);
+  assert(!/#[0-9A-Fa-f]{6}/.test(diagram.svg.replace(/#(?:000000|FFFFFF)/g,'')));assert.throws(()=>readerRhythmData('unknown',0));
 });

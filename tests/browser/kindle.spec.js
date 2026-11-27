@@ -19,9 +19,34 @@ test('Kindle scales, natural notes, circle and riffs use explicit static page tu
   await page.getByRole('button',{name:'Scales',exact:true}).click();await expect(page.getByLabel('Scale pattern')).toBeVisible();await page.getByLabel('Scale pattern').selectOption('neck');await page.getByRole('button',{name:'Show scale tab'}).click();
   await expect(page.locator('.reader-tab')).toContainText('5');await page.locator('#reader-content .reader-pages').first().getByRole('button',{name:'Next',exact:true}).click();await expect(page.getByText('Notes 9–16',{exact:false})).toBeVisible();
   await page.getByRole('button',{name:'Note map',exact:true}).click();await expect(page.locator('table tr')).toHaveCount(7);await page.getByRole('button',{name:'Frets 7–12'}).click();await expect(page.locator('table th').nth(1)).toHaveText('7');
+  await expect(page.locator('.reader-fretboard')).toBeVisible();
   await page.getByRole('button',{name:'Circle of fifths',exact:true}).click();await expect(page.locator('table tr')).toHaveCount(13);
+  await expect(page.locator('.reader-circle')).toBeVisible();
   await page.getByRole('button',{name:'Riffs',exact:true}).click();await expect(page.locator('.reader-tab')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(768);
+});
+
+test('Kindle has rhythm notation, symbol help and the same static finger model without media APIs',async({page})=>{
+  await limitedBrowser(page);await page.setViewportSize({width:768,height:1024});const urls=[];page.on('request',r=>urls.push(r.url()));await page.goto('/kindle.html');await expect(page.locator('#reader-status')).toHaveText('Ready.');
+  await page.getByRole('button',{name:'Rhythm',exact:true}).click();await expect(page.locator('.reader-score svg').first()).toBeVisible();
+  await expect(page.getByLabel('Rhythm pattern').locator('option')).toHaveCount(14);await page.getByLabel('Rhythm pattern').selectOption('arpeggio');await page.getByLabel('Practice chord').selectOption({label:'C'});await page.getByLabel('Rhythm notation').selectOption('both');await page.getByRole('button',{name:'Show rhythm',exact:true}).click();
+  await expect(page.locator('#reader-content h3').first()).toContainText('C');await expect(page.locator('.reader-chord')).toBeVisible();
+  await page.getByRole('button',{name:'Show / hide symbol key',exact:true}).click();await expect(page.locator('.reader-reference')).toContainText('Eighth rest');
+  await page.getByRole('button',{name:'Show / hide skeleton finger example',exact:true}).click();await expect(page.locator('.reader-hand svg')).toBeVisible();await expect(page.locator('.reader-hand .cartoon-bone').first()).toBeVisible();
+  await page.getByRole('button',{name:'Focus rhythm',exact:true}).click();await expect(page.locator('header')).toBeHidden();await page.getByRole('button',{name:'Show controls',exact:true}).click();await expect(page.locator('header')).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(768);
+  await page.locator('.reader-hand').screenshot({path:'test-results/kindle-finger-example.png'});
+  expect(urls.filter(u=>/alphaTab|three|soundfont|worklet|\.worker|@vite\/client/.test(u))).toEqual([]);
+});
+
+test('Kindle Spider includes all permutations, movable frets, per-string pages and a finger map',async({page})=>{
+  await limitedBrowser(page);await page.setViewportSize({width:768,height:1024});await page.goto('/kindle.html');await expect(page.locator('#reader-status')).toHaveText('Ready.');
+  await page.getByRole('button',{name:'Spider',exact:true}).click();await expect(page.getByLabel('Finger permutation').locator('option')).toHaveCount(24);
+  await page.getByLabel('Finger permutation').selectOption('4123');await page.getByLabel('Index finger fret').fill('7');await page.getByRole('button',{name:'Show Spider',exact:true}).click();
+  await expect(page.getByText('Fingers: 4 → 1 → 2 → 3 → 2 → 1 → 4',{exact:true})).toBeVisible();await expect(page.locator('#reader-content h3')).toHaveText('String 6 · frets 7–10');await expect(page.locator('.reader-tab')).toContainText('10');await expect(page.locator('.reader-fretboard')).toBeVisible();
+  await page.getByRole('button',{name:'Next',exact:true}).click();await expect(page.locator('#reader-content h3')).toHaveText('String 5 · frets 7–10');
+  await page.getByRole('button',{name:'Focus Spider',exact:true}).click();await expect(page.locator('header')).toBeHidden();await page.getByRole('button',{name:'Show controls',exact:true}).click();await expect(page.locator('header')).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(768);await page.screenshot({path:'test-results/kindle-spider.png',fullPage:true});
 });
 test('Kindle score pages are prepared on the server with notation, track and plain-text alternatives',async({page})=>{
   await limitedBrowser(page);await page.setViewportSize({width:1072,height:1448});await page.goto('/kindle.html');await expect(page.locator('#reader-status')).toHaveText('Ready.');await page.getByRole('button',{name:'Scores',exact:true}).click();await page.getByRole('button',{name:'Open score',exact:true}).click();
