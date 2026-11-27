@@ -275,6 +275,15 @@ and [MuseScore's strumming guide](https://musescore.com/articles/materials/guita
 This first trainer covers straight eighth-note patterns in 4/4, not 3/4, 6/8,
 swung eighths, sixteenths, or simultaneous fingerstyle pinches.
 
+The Rhythm practice view opens with a conventional **Tab** preview. **Show**
+switches to **Sheet music** or **Tab + sheet music**. The same eight slots produce
+eighth notes and rests, with chord names, selected frets and strum directions;
+the current beat highlights against the metronome. Unknown pitches display
+dead-note crosses rather than invented pitched notes. Custom pitch targets use
+one possible guitar position. The counted-slot editor remains under the closed
+**Edit pattern** disclosure. Score rendering is silent and has no second player
+or audio clock. On small screens, the tab scrolls within its own panel.
+
 Start at 50 BPM with a four-beat count-in. A fresh microphone attack within the
 timing window earns Perfect/Good/Close points, with early/late feedback, streaks,
 accuracy and milestone badges. Picking can add 50 points for the selected target

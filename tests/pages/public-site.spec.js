@@ -46,6 +46,8 @@ test('public rhythm trainer maps a selected chord and starts a timing round with
   await page.getByRole('link',{name:'Picking & strumming · rhythm trainer',exact:true}).click();
   await page.getByRole('combobox',{name:'Pattern',exact:true}).selectOption('travis');await page.getByLabel('Practice chord',{exact:true}).selectOption('C');
   await expect(page.locator('#rhythm-grid button').first()).toContainText('3f C3');
+  await expect(page.locator('#rhythm-score svg').first()).toBeVisible();await expect(page.getByLabel('Rhythm notation')).toHaveValue('tab');
+  await page.getByLabel('Rhythm notation').selectOption('both');await expect(page.locator('#rhythm-score svg').first()).toBeVisible();await page.getByLabel('Rhythm notation').selectOption('tab');
   await page.getByRole('combobox',{name:'Input',exact:true}).selectOption('tap');await page.locator('#rhythm-start').click();
   await expect(page.locator('#rhythm-count')).toContainText('Ready');await page.locator('#rhythm-stop').click();
   await expect(page.locator('#rhythm-start')).toBeEnabled();expect(errors).toEqual([]);

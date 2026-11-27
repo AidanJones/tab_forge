@@ -3,6 +3,7 @@ import {RhythmAudio} from './rhythm-audio.js';
 import {pitchNote,midiFrequency} from './pitch.js';
 import {CHORD_LIBRARY} from './chord-library.js';
 import {pickingTargets} from './rhythm-patterns.js';
+import {RhythmScore} from './rhythm-score.js';
 
 const noteName=midi=>{const p=pitchNote(midiFrequency(midi));return p.name+p.octave;};
 
@@ -10,7 +11,7 @@ export class RhythmTrainer {
   constructor(host,{beforeStart=()=>{}}={}){
     this.host=host;this.beforeStart=beforeStart;this.$=s=>host.querySelector(s);this.running=false;this.pending=false;
     this.text=(selector,value)=>{const node=this.$(selector);if(node.textContent!==String(value))node.textContent=value;};
-    host.innerHTML=`<h2>Find your groove</h2><p>Keep moving on <strong>1 + 2 + 3 + 4 +</strong>. Play the solid slots; move past the strings on the empty ones. This repeats one bar of 4/4 in eighth notes.</p>
+    host.innerHTML=`<h2>Find your groove</h2><p>Read the tab and follow <strong>1 + 2 + 3 + 4 +</strong>. Choose tab, sheet music or both. Rests mark the silent gaps. To change when to play, open Edit pattern below.</p>
       <div class="rhythm-settings"><label>Technique<select id="rhythm-technique"><option value="picking">Picking · timing + optional note bonus</option><option value="strumming">Strumming · timing</option></select></label><label>Pattern<select id="rhythm-preset"></select></label><label>Starting / manual BPM<input id="rhythm-bpm" type="number" min="30" max="180" value="50"></label><label>Input<select id="rhythm-input-mode"><option value="microphone">Guitar microphone</option><option value="tap">Tap button / Space · timing only</option></select></label></div>
       <p class="rhythm-pattern-help">Tap a slot to turn its sound on or off. D is the down motion on a number; U is the up motion on +. For picking, use these as down/up picking cues.</p>
       <div id="rhythm-grid" class="rhythm-grid" aria-label="Eight eighth-note slots"></div>
@@ -29,7 +30,8 @@ export class RhythmTrainer {
     const noteHelp=document.createElement('p');noteHelp.textContent='Chord mode derives the pitch from the selected string and fret. P = thumb, I = index, M = middle, A = ring. For pitch bonuses, isolate each pluck: ringing bass notes can mask the next pitch. Strumming is timing-only; chord selection is a practice guide.';this.$('.rhythm-targets').append(noteHelp);
     const bonusLabel=document.createElement('label');const bonus=document.createElement('input');bonus.type='checkbox';bonus.id='rhythm-note-bonus';bonus.checked=true;bonusLabel.append(bonus,' Award single-note pitch bonuses');this.$('.rhythm-targets').insertBefore(bonusLabel,mapping);
     noteHelp.append(' Turn off pitch bonuses for ringing arpeggios or simultaneous pinches; timing practice still works.');
-    this.$('.rhythm-session').insertBefore(this.$('#rhythm-grid'),this.$('.rhythm-pulse'));
+    const scoreHost=document.createElement('section');scoreHost.className='rhythm-score-preview';scoreHost.setAttribute('aria-label','Rhythm score preview');this.$('.rhythm-session').insertBefore(scoreHost,this.$('.rhythm-pulse'));this.score=new RhythmScore(scoreHost);
+    const editor=document.createElement('details');editor.className='rhythm-pattern-editor';const editorHeading=document.createElement('summary');editorHeading.textContent='Edit pattern · counted eighth-note slots';editor.append(editorHeading,this.$('.rhythm-pattern-help'),this.$('#rhythm-grid'));scoreHost.after(editor);
     this.$('#rhythm-preset').replaceChildren(...Object.entries(RHYTHM_PRESETS).map(([id,p])=>new Option(p.name,id)));
     this.audio=new RhythmAudio({state:(state,message)=>this.audioState(state,message),frame:(time,rms)=>this.frame(time,rms),attack:time=>this.attack(time),pitch:(event,pitch)=>this.pitch(event,pitch)});
     this.$('#rhythm-preset').addEventListener('change',()=>this.preset());
@@ -84,6 +86,7 @@ export class RhythmTrainer {
     this.host.querySelectorAll('[data-note-slot]').forEach((select,i)=>select.disabled=this.running||!this.hits[i]);
     this.host.querySelectorAll('[data-string-slot]').forEach((select,i)=>select.disabled=this.running||!this.hits[i]);
     this.$('.rhythm-pattern-help').textContent=picking?'Tap slots to choose when to play. Picking cards show P/I/M/A, string (s) and fret (f) when mapped to a chord; string 6 is low E, string 1 high e. These are fingerstyle suggestions, not measured finger choices.':'Tap slots to choose when to strum. D is down on a number, U is up on +. Keep the silent motions moving; the selected chord does not change timing scores.';
+    this.score?.update({hits:[...this.hits],technique:this.$('#rhythm-technique').value,chord:this.$('#rhythm-chord').value,plan:picking?this.plan:null,targets:this.targetError?Array(8).fill(null):[...this.host.querySelectorAll('[data-note-slot]')].map(select=>select.value===''?null:Number(select.value)),bpm:Number(this.$('#rhythm-bpm').value)||50});
   }
   lock(locked){
     this.$('.rhythm-session').dataset.running=String(this.running);
@@ -102,14 +105,17 @@ export class RhythmTrainer {
       const mic=this.$('#rhythm-input-mode').value==='microphone';
       const ready=await this.audio.start(mic,this.$('#rhythm-device').value);
       if(!ready)return;
+      const audioRequest=this.audio.request;this.$('#rhythm-status').textContent='Preparing the tab before the count-in…';await this.score.ready();
+      if(audioRequest!==this.audio.request||!this.audio.context)return;
       this.pending=false;this.running=true;this.session=session;this.attacks=0;this.lastDraw=-Infinity;this.offset=mic?offset/1000:0;
       this.$('#rhythm-attacks').textContent=`0 attacks ${mic?'heard':'tapped'}`;
       this.targets=[...this.host.querySelectorAll('[data-note-slot]')].map(select=>select.value===''?null:Number(select.value));
       this.noteBonus=mic&&this.$('#rhythm-technique').value==='picking'&&this.$('#rhythm-note-bonus').checked;
       this.audio.floor=10**(Number(this.$('#rhythm-floor').value)/20);this.audio.ratio=Number(this.$('#rhythm-sensitivity').value);
       this.countStart=this.audio.now+.2;this.beat=60/bpm;this.begin=this.countStart+4*this.beat;session.start(this.begin);
+      this.$('.rhythm-pattern-editor').open=false;
       this.$('#rhythm-tap').hidden=mic;this.$('#rhythm-tap').disabled=true;this.lock(true);this.$(mic?'#rhythm-stop':'.rhythm-session').focus({preventScroll:true});
-      this.$('.rhythm-session').scrollIntoView({block:'start'});this.frame(this.audio.now,0);this.devices();
+      this.frame(this.audio.now,0);this.$('.rhythm-session').scrollIntoView({block:'start'});this.devices();
     }catch(error){this.$('#rhythm-status').textContent=error.message;this.pending=false;this.lock(false);}
   }
   async devices(){
@@ -130,6 +136,7 @@ export class RhythmTrainer {
     const countIn=now<this.begin;
     this.$('#rhythm-tap').disabled=countIn;
     const bar=s.barAt(now),slot=countIn?-1:Math.min(7,Math.floor((now-bar.start)/(30/bar.bpm)));
+    this.score.highlight(slot);
     this.$('#rhythm-count').textContent=countIn?`Ready · ${Math.min(4,Math.max(1,Math.ceil((this.begin-now)/this.beat)))}`:`${Math.floor(slot/2)+1}${slot%2?' +':''}`;
     const picked=!countIn&&this.$('#rhythm-technique').value==='picking'&&this.plan?.[slot];
     this.$('#rhythm-motion').textContent=picked?picked.finger:slot%2===0?'↓':'↑';
@@ -152,6 +159,6 @@ export class RhythmTrainer {
     this.$('#rhythm-summary').textContent=`${s.totalHits} on-time attacks · ${s.misses} missed · ${s.extras} extra strokes. Accuracy counts hits, misses and extras; pitch bonuses are separate.`;
   }
   stop(message='Stopped. Start again for a fresh count-in and new round.'){
-    this.audio.stop();this.$('#rhythm-status').textContent=message;this.$('#rhythm-count').textContent='Stopped';this.$('#rhythm-cue').textContent='Adjust the pattern or start a fresh round.';this.$('#rhythm-motion').textContent='↕';this.$('#rhythm-motion').dataset.silent='true';this.host.querySelectorAll('[data-slot]').forEach(button=>button.dataset.current='false');this.drawRewards();
+    this.audio.stop();this.score.highlight(-1);this.$('#rhythm-status').textContent=message;this.$('#rhythm-count').textContent='Stopped';this.$('#rhythm-cue').textContent='Adjust the pattern or start a fresh round.';this.$('#rhythm-motion').textContent='↕';this.$('#rhythm-motion').dataset.silent='true';this.host.querySelectorAll('[data-slot]').forEach(button=>button.dataset.current='false');this.drawRewards();
   }
 }
